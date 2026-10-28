@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "server": "node server.js",
+    "postinstall": "prisma generate",
     "lint": "next lint",
     "import:servers": "tsx scripts/importFromDiscordServers.ts"
   },
