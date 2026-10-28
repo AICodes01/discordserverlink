@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String?    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?    // For admin local login if needed
+  discordId     String?    @unique
+  username      String?
+  discriminator String?
+  role          String     @default("USER") // USER, MODERATOR, ADMIN
+  banned        Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  servers       Server[]
+  reviews       Review[]
+  bumps         Bump[]
+  auditLogs     AuditLog[]
+}
+
+model Server {
+  id               String    @id @default(cuid())
+  guildId          String?   @unique
+  name             String
+  slug             String    @unique
+  shortDescription String
+  longDescription  String
+  inviteUrl        String
+  inviteCode       String?
+  iconUrl          String?
+  bannerUrl        String?
+  memberCount      Int       @default(0)
+  onlineCount      Int       @default(0)
+  categorySlug     String    @default("community")
+  tags             String    @default("") // Comma-separated list of tags
+  language         String    @default("en")
+  isNsfw           Boolean   @default(false)
+  isFeatured       Boolean   @default(false)
+  isVerified       Boolean   @default(false)
+  isPartnered      Boolean   @default(false)
+  status           String    @default("APPROVED") // PENDING, APPROVED, REJECTED, BANNED
+  bumpsCount       Int       @default(0)
+  lastBumpedAt     DateTime  @default(now())
+  viewsCount       Int       @default(0)
+  joinsCount       Int       @default(0)
+  
+  ownerId          String
+  owner            User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  reviews          Review[]
+  bumps            Bump[]
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([categorySlug])
+  @@index([lastBumpedAt])
+  @@index([isFeatured])
+  @@index([status])
+}
+
+model Category {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  slug           String   @unique
+  icon           String   // lucide icon name or emoji
+  description    String
+  seoTitle       String?
+  seoDescription String?
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Tag {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  slug           String   @unique
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Bump {
+  id        String   @id @default(cuid())
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([serverId, createdAt])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      @default(5) // 1 to 5
+  content   String
+  status    String   @default("APPROVED") // PENDING, APPROVED, FLAGGED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serverId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String?
+  targetId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model SiteSetting {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String   // e.g. "/", "/category/gaming", "/server/aetheria-gaming"
+  title     String?
+  referrer  String?
+  userAgent String?
+  device    String?  @default("desktop") // desktop, mobile, tablet
+  createdAt DateTime @default(now())
+
+  @@index([path])
+  @@index([createdAt])
+}
+
+model VideoItem {
+  id           String   @id @default(cuid())
+  title        String
+  url          String
+  thumbnail    String?
+  platform     String   @default("youtube") // youtube, tiktok, discord
+  viewsCount   Int      @default(0)
+  categorySlug String?  @default("community")
+  featured     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([platform])
+  @@index([categorySlug])
+}
+

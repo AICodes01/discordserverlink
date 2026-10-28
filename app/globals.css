@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0d0f15;
+  --foreground: #f2f3f5;
+  --card: #151821;
+  --card-hover: #1b1f2b;
+  --border: #232734;
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Custom modern scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d0f15;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #252a38;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #363d52;
+}
+
+/* Discord glowing accent utility */
+.glow-blurple {
+  box-shadow: 0 0 20px -3px rgba(88, 101, 242, 0.45);
+}
+
+.glow-green {
+  box-shadow: 0 0 20px -3px rgba(87, 242, 135, 0.35);
+}
+
+/* Glassmorphism panel */
+.glass-panel {
+  background: rgba(22, 24, 34, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-nav {
+  background: rgba(13, 15, 21, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
