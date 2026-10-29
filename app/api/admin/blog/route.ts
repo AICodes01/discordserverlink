@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
 import slugify from "slugify";
-import { estimateReadingTime, detectCategory } from "@/lib/blog";
+import { estimateReadingTime, detectCategory, cleanPostContent } from "@/lib/blog";
 
 // Helper to update blogData.json
 function updateJsonFile(posts: any[]) {
@@ -79,8 +79,9 @@ export async function POST(req: NextRequest) {
       ? slugify(slug, { lower: true, strict: true })
       : slugify(title, { lower: true, strict: true });
 
+    const cleanedContent = cleanPostContent(content.trim());
     const finalCategory = category || detectCategory(finalSlug, title);
-    const readingTime = estimateReadingTime(content);
+    const readingTime = estimateReadingTime(cleanedContent);
     const finalAuthor = author || session?.user?.name || "DiscordServerLink Team";
     const now = new Date().toISOString();
 
@@ -88,8 +89,8 @@ export async function POST(req: NextRequest) {
       id: Date.now().toString(),
       slug: finalSlug,
       title: title.trim(),
-      excerpt: (excerpt || content.replace(/<[^>]+>/g, " ").slice(0, 160) + "...").trim(),
-      content: content.trim(),
+      excerpt: (excerpt || cleanedContent.replace(/<[^>]+>/g, " ").slice(0, 160) + "...").trim(),
+      content: cleanedContent,
       featuredImage: featuredImage?.trim() || "/og-image.png",
       category: finalCategory,
       author: finalAuthor,

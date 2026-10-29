@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
 import slugify from "slugify";
-import { estimateReadingTime, detectCategory } from "@/lib/blog";
+import { estimateReadingTime, detectCategory, cleanPostContent } from "@/lib/blog";
 
 function updateJsonFile(posts: any[]) {
   try {
@@ -56,14 +56,15 @@ export async function PUT(
       ? slugify(slug, { lower: true, strict: true })
       : current.slug;
     const finalCategory = category || current.category || detectCategory(finalSlug, title || current.title);
-    const finalReadingTime = content ? estimateReadingTime(content) : current.readingTime;
+    const cleanedContent = content !== undefined ? cleanPostContent(content.trim()) : current.content;
+    const finalReadingTime = content ? estimateReadingTime(cleanedContent) : current.readingTime;
 
     const updatedPost = {
       ...current,
       title: title !== undefined ? title.trim() : current.title,
       slug: finalSlug,
       excerpt: excerpt !== undefined ? excerpt.trim() : current.excerpt,
-      content: content !== undefined ? content.trim() : current.content,
+      content: cleanedContent,
       featuredImage: featuredImage !== undefined ? featuredImage.trim() : current.featuredImage,
       category: finalCategory,
       author: author !== undefined ? author.trim() : current.author,

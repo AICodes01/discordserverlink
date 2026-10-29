@@ -26,6 +26,78 @@ export function estimateReadingTime(content: string): string {
   return `${minutes} min read`;
 }
 
+// Strip WordPress wrappers, Gutenberg blocks, and Table of Contents, keeping pure clean text and images
+export function cleanPostContent(rawHtml: string): string {
+  if (!rawHtml) return "";
+
+  let html = rawHtml;
+
+  // 1. Remove Gutenberg block comments
+  html = html.replace(/<!--\s*\/?wp:[^>]*-->/gi, "");
+
+  // 2. Remove entire Table of Contents (ez-toc or similar)
+  html = html.replace(/<div[^>]*id=["']ez-toc-container["'][\s\S]*?<\/nav>\s*<\/div>/gi, "");
+  html = html.replace(/<div[^>]*class=["'][^"']*ez-toc-container[^"']*["'][\s\S]*?<\/nav>\s*<\/div>/gi, "");
+  html = html.replace(/<div[^>]*id=["']ez-toc-container["'][\s\S]*?<\/div>\s*<\/div>/gi, "");
+  html = html.replace(/<span[^>]*class=["']ez-toc-section["'][^>]*><\/span>/gi, "");
+  html = html.replace(/<span[^>]*class=["']ez-toc-section-end["'][^>]*><\/span>/gi, "");
+  html = html.replace(/<nav[^>]*class=["'][^"']*ez-toc[^"']*["'][\s\S]*?<\/nav>/gi, "");
+
+  // 3. Extract and normalize clean images
+  html = html.replace(/<img[^>]+>/gi, (match) => {
+    const srcMatch = match.match(/src=["']([^"']+)["']/i);
+    const altMatch = match.match(/alt=["']([^"']*)["']/i);
+    if (!srcMatch) return "";
+    const src = srcMatch[1];
+    const alt = altMatch ? altMatch[1].replace(/["']/g, "").trim() : "";
+    return `<img src="${src}" alt="${alt}" loading="lazy" />`;
+  });
+
+  // 4. Unwrap wrappers: figure, div, span
+  html = html.replace(/<\/?figure[^>]*>/gi, "");
+  html = html.replace(/<\/?div[^>]*>/gi, "");
+  html = html.replace(/<\/?span[^>]*>/gi, "");
+
+  // 5. Strip all 'class', 'style', 'data-*', 'decoding', 'sizes', etc. from all tags
+  html = html.replace(/<([a-z0-9]+)\b([^>]*)>/gi, (match, tag, attrs) => {
+    const lowerTag = tag.toLowerCase();
+
+    // Preserve clean img
+    if (lowerTag === "img") {
+      const srcMatch = attrs.match(/src=["']([^"']+)["']/i);
+      const altMatch = attrs.match(/alt=["']([^"']*)["']/i);
+      const src = srcMatch ? srcMatch[1] : "";
+      const alt = altMatch ? altMatch[1].replace(/["']/g, "").trim() : "";
+      return `<img src="${src}" alt="${alt}" loading="lazy" />`;
+    }
+
+    // Preserve clean a (hyperlinks)
+    if (lowerTag === "a") {
+      const hrefMatch = attrs.match(/href=["']([^"']+)["']/i);
+      if (!hrefMatch) return "<a>";
+      const href = hrefMatch[1];
+      if (href.startsWith("#")) {
+        return `<a href="${href}">`;
+      }
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">`;
+    }
+
+    // Pure semantic HTML for all other tags
+    return `<${lowerTag}>`;
+  });
+
+  // 6. Clean empty tags
+  html = html.replace(/<p>\s*<\/p>/gi, "");
+  html = html.replace(/<p>&nbsp;<\/p>/gi, "");
+  html = html.replace(/<p>\s*&nbsp;\s*<\/p>/gi, "");
+  html = html.replace(/<h[1-6]>\s*<\/h[1-6]>/gi, "");
+
+  // 7. Normalize multiple blank lines
+  html = html.replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
+
+  return html;
+}
+
 // Map tags/categories based on title/slug
 export function detectCategory(slug: string, title: string): string {
   const lower = (slug + " " + title).toLowerCase();
@@ -58,19 +130,27 @@ function getStaticPosts(): BlogPost[] {
     if (fs.existsSync(filePath)) {
       const raw = fs.readFileSync(filePath, "utf-8");
       const parsed = JSON.parse(raw);
-      return parsed.map((p: any) => ({
-        ...p,
-        readingTime: p.readingTime || estimateReadingTime(p.content),
-        category: p.category || detectCategory(p.slug, p.title),
-      }));
+      return parsed.map((p: any) => {
+        const cleaned = cleanPostContent(p.content);
+        return {
+          ...p,
+          content: cleaned,
+          readingTime: p.readingTime || estimateReadingTime(cleaned),
+          category: p.category || detectCategory(p.slug, p.title),
+        };
+      });
     }
   } catch (err) {}
 
-  return (staticPosts as any[]).map((p) => ({
-    ...p,
-    readingTime: p.readingTime || estimateReadingTime(p.content),
-    category: p.category || detectCategory(p.slug, p.title),
-  }));
+  return (staticPosts as any[]).map((p) => {
+    const cleaned = cleanPostContent(p.content);
+    return {
+      ...p,
+      content: cleaned,
+      readingTime: p.readingTime || estimateReadingTime(cleaned),
+      category: p.category || detectCategory(p.slug, p.title),
+    };
+  });
 }
 
 export function getAllPostsSync(): BlogPost[] {
@@ -88,20 +168,23 @@ export async function getAllPosts(): Promise<BlogPost[]> {
       });
 
       if (dbPosts && dbPosts.length > 0) {
-        return dbPosts.map((p: any) => ({
-          id: p.id,
-          slug: p.slug,
-          title: p.title,
-          excerpt: p.excerpt,
-          content: p.content,
-          date: p.createdAt.toISOString(),
-          modified: p.updatedAt ? p.updatedAt.toISOString() : p.createdAt.toISOString(),
-          featuredImage: p.featuredImage || "/og-image.png",
-          author: p.author || "DiscordServerLink Team",
-          readingTime: p.readingTime || estimateReadingTime(p.content),
-          category: p.category || detectCategory(p.slug, p.title),
-          published: p.published,
-        }));
+        return dbPosts.map((p: any) => {
+          const cleaned = cleanPostContent(p.content);
+          return {
+            id: p.id,
+            slug: p.slug,
+            title: p.title,
+            excerpt: p.excerpt,
+            content: cleaned,
+            date: p.createdAt.toISOString(),
+            modified: p.updatedAt ? p.updatedAt.toISOString() : p.createdAt.toISOString(),
+            featuredImage: p.featuredImage || "/og-image.png",
+            author: p.author || "DiscordServerLink Team",
+            readingTime: p.readingTime || estimateReadingTime(cleaned),
+            category: p.category || detectCategory(p.slug, p.title),
+            published: p.published,
+          };
+        });
       }
     }
   } catch (e) {
@@ -120,17 +203,18 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | undefined>
         where: { slug: cleanSlug },
       });
       if (dbPost) {
+        const cleaned = cleanPostContent(dbPost.content);
         return {
           id: dbPost.id,
           slug: dbPost.slug,
           title: dbPost.title,
           excerpt: dbPost.excerpt,
-          content: dbPost.content,
+          content: cleaned,
           date: dbPost.createdAt.toISOString(),
           modified: dbPost.updatedAt ? dbPost.updatedAt.toISOString() : dbPost.createdAt.toISOString(),
           featuredImage: dbPost.featuredImage || "/og-image.png",
           author: dbPost.author || "DiscordServerLink Team",
-          readingTime: dbPost.readingTime || estimateReadingTime(dbPost.content),
+          readingTime: dbPost.readingTime || estimateReadingTime(cleaned),
           category: dbPost.category || detectCategory(dbPost.slug, dbPost.title),
           published: dbPost.published,
         };
