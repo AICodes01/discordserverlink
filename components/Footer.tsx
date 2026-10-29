@@ -146,6 +146,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/blog" className="hover:text-white transition font-medium text-discord-blurple">
+                  Blog & Guides
+                </Link>
+              </li>
+              <li>
                 <Link href="/sitemap.xml" className="hover:text-white transition">
                   XML Sitemap
                 </Link>
@@ -161,7 +166,10 @@ export default function Footer() {
               Home
             </Link>
             <Link href="/servers" className="hover:text-zinc-400 transition">
-              Browse
+              Servers
+            </Link>
+            <Link href="/blog" className="hover:text-zinc-400 transition">
+              Blog
             </Link>
             <Link href="/sitemap.xml" className="hover:text-zinc-400 transition">
               Sitemap
