@@ -85,7 +85,7 @@ export default async function HomePage() {
     totalServers = totalServersCount || 120;
     totalMembers = totalMembersSum._sum.memberCount || 350000;
     totalBumps = totalBumpsCount || 12000;
-    latestBlogPosts = allBlogPosts.slice(0, 3);
+    latestBlogPosts = allBlogPosts;
   } catch (error) {
     // Graceful fallback for local builds / offline database
     try {
@@ -97,7 +97,7 @@ export default async function HomePage() {
       totalServers = seed.servers ? seed.servers.length : 120;
     } catch {}
     const allBlogPosts = await getAllPosts();
-    latestBlogPosts = allBlogPosts.slice(0, 3);
+    latestBlogPosts = allBlogPosts;
   }
 
   return (

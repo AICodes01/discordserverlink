@@ -160,6 +160,15 @@ export function getAllPostsSync(): BlogPost[] {
 }
 
 export async function getAllPosts(): Promise<BlogPost[]> {
+  const staticList = getAllPostsSync();
+  const postsMap = new Map<string, BlogPost>();
+
+  // 1. Populate all static posts first (all 14 articles)
+  for (const p of staticList) {
+    postsMap.set(p.slug.toLowerCase(), p);
+  }
+
+  // 2. Overlay any database posts (including edits and admin posts)
   try {
     if (prisma && (prisma as any).blogPost) {
       const dbPosts = await (prisma as any).blogPost.findMany({
@@ -168,9 +177,9 @@ export async function getAllPosts(): Promise<BlogPost[]> {
       });
 
       if (dbPosts && dbPosts.length > 0) {
-        return dbPosts.map((p: any) => {
+        for (const p of dbPosts) {
           const cleaned = cleanPostContent(p.content);
-          return {
+          postsMap.set(p.slug.toLowerCase(), {
             id: p.id,
             slug: p.slug,
             title: p.title,
@@ -183,15 +192,17 @@ export async function getAllPosts(): Promise<BlogPost[]> {
             readingTime: p.readingTime || estimateReadingTime(cleaned),
             category: p.category || detectCategory(p.slug, p.title),
             published: p.published,
-          };
-        });
+          });
+        }
       }
     }
   } catch (e) {
     // Database query failed or uninitialized, fallback to static JSON
   }
 
-  return getAllPostsSync();
+  return Array.from(postsMap.values()).sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 }
 
 export async function getPostBySlug(slug: string): Promise<BlogPost | undefined> {

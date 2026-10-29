@@ -4,7 +4,55 @@ const path = require("path");
 
 const prisma = new PrismaClient();
 
+async function syncBlogPosts() {
+  const blogFile = path.join(__dirname, "..", "lib", "blogData.json");
+  if (!fs.existsSync(blogFile)) return;
+  try {
+    const blogPosts = JSON.parse(fs.readFileSync(blogFile, "utf-8"));
+    if (blogPosts && blogPosts.length > 0) {
+      console.log(`Synchronizing ${blogPosts.length} blog posts into database...`);
+      for (const bp of blogPosts) {
+        try {
+          await prisma.blogPost.upsert({
+            where: { slug: bp.slug },
+            create: {
+              slug: bp.slug,
+              title: bp.title,
+              excerpt: bp.excerpt,
+              content: bp.content,
+              featuredImage: bp.featuredImage || "/og-image.png",
+              category: bp.category || "Discord Servers",
+              author: bp.author || "DiscordServerLink Team",
+              readingTime: bp.readingTime || "4 min read",
+              published: bp.published ?? true,
+              createdAt: bp.date ? new Date(bp.date) : new Date(),
+              updatedAt: bp.modified ? new Date(bp.modified) : new Date(),
+            },
+            update: {
+              content: bp.content,
+              excerpt: bp.excerpt,
+              title: bp.title,
+              featuredImage: bp.featuredImage || "/og-image.png",
+              category: bp.category || "Discord Servers",
+              readingTime: bp.readingTime || "4 min read",
+              published: bp.published ?? true,
+            },
+          });
+        } catch (bpErr) {
+          console.warn(`Error upserting post ${bp.slug}:`, bpErr.message);
+        }
+      }
+      console.log(`✓ Synchronized ${blogPosts.length} cleaned blog posts`);
+    }
+  } catch (err) {
+    console.warn("Could not seed blog posts:", err.message);
+  }
+}
+
 async function main() {
+  // Always synchronize blog posts first so all 14 articles exist in PostgreSQL
+  await syncBlogPosts();
+
   let serverCount = 0;
   try {
     serverCount = await prisma.server.count();
@@ -102,47 +150,6 @@ async function main() {
       }
     }
     console.log(`✓ Inserted ${data.servers.length} Discord servers`);
-  }
-
-  // 5. Synchronize clean Blog Posts from lib/blogData.json
-  const blogFile = path.join(__dirname, "..", "lib", "blogData.json");
-  if (fs.existsSync(blogFile)) {
-    try {
-      const blogPosts = JSON.parse(fs.readFileSync(blogFile, "utf-8"));
-      if (blogPosts && blogPosts.length > 0) {
-        for (const bp of blogPosts) {
-          try {
-            await prisma.blogPost.upsert({
-              where: { slug: bp.slug },
-              create: {
-                slug: bp.slug,
-                title: bp.title,
-                excerpt: bp.excerpt,
-                content: bp.content,
-                featuredImage: bp.featuredImage || "/og-image.png",
-                category: bp.category || "Discord Servers",
-                author: bp.author || "DiscordServerLink Team",
-                readingTime: bp.readingTime || "4 min read",
-                published: bp.published ?? true,
-                createdAt: bp.date ? new Date(bp.date) : new Date(),
-                updatedAt: bp.modified ? new Date(bp.modified) : new Date(),
-              },
-              update: {
-                content: bp.content,
-                excerpt: bp.excerpt,
-                title: bp.title,
-                featuredImage: bp.featuredImage || "/og-image.png",
-                category: bp.category || "Discord Servers",
-                readingTime: bp.readingTime || "4 min read",
-              },
-            });
-          } catch (bpErr) {}
-        }
-        console.log(`✓ Synchronized ${blogPosts.length} cleaned blog posts`);
-      }
-    } catch (err) {
-      console.warn("Could not seed blog posts:", err.message);
-    }
   }
 }
 
