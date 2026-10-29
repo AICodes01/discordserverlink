@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
-import { getAllPosts, getPostBySlug, getRelatedPosts } from "@/lib/blog";
+import { getAllPostsSync, getPostBySlug, getRelatedPosts } from "@/lib/blog";
 import BlogCard from "@/components/BlogCard";
 import {
   Calendar,
@@ -22,7 +22,7 @@ interface BlogPostPageProps {
 }
 
 export async function generateStaticParams() {
-  const posts = getAllPosts();
+  const posts = getAllPostsSync();
   return posts.map((post) => ({
     slug: post.slug,
   }));
@@ -31,7 +31,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: BlogPostPageProps): Promise<Metadata> {
-  const post = getPostBySlug(params.slug);
+  const post = await getPostBySlug(params.slug);
   if (!post) {
     return { title: "Article Not Found - DiscordServerLink" };
   }
@@ -65,11 +65,11 @@ export async function generateMetadata({
 
 export const revalidate = 60;
 
-export default function BlogPostPage({ params }: BlogPostPageProps) {
-  const post = getPostBySlug(params.slug);
+export default async function BlogPostPage({ params }: BlogPostPageProps) {
+  const post = await getPostBySlug(params.slug);
   if (!post) notFound();
 
-  const relatedPosts = getRelatedPosts(post.slug, 3);
+  const relatedPosts = await getRelatedPosts(post.slug, 3);
 
   const formattedDate = new Date(post.date).toLocaleDateString("en-US", {
     month: "long",

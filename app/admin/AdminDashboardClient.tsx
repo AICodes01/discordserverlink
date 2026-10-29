@@ -39,7 +39,9 @@ import {
   Check,
   Code2,
   ShieldCheck,
+  BookOpen,
 } from "lucide-react";
+import AdminBlogManager from "@/components/admin/AdminBlogManager";
 
 interface AdminProps {
   initialServers: any[];
@@ -48,6 +50,7 @@ interface AdminProps {
   initialSettings: Record<string, string>;
   initialLogs: any[];
   initialVideos?: any[];
+  initialBlogPosts?: any[];
   stats: {
     totalServers: number;
     pendingServers: number;
@@ -79,12 +82,13 @@ export default function AdminDashboardClient({
   initialSettings,
   initialLogs,
   initialVideos = [],
+  initialBlogPosts = [],
   stats,
   analytics,
   currentAdminRole,
 }: AdminProps) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "stats" | "ads" | "servers" | "categories" | "users" | "settings" | "logs"
+    "overview" | "stats" | "ads" | "servers" | "categories" | "blog" | "users" | "settings" | "logs"
   >("overview");
 
   // State
@@ -94,6 +98,7 @@ export default function AdminDashboardClient({
   const [settings, setSettings] = useState(initialSettings);
   const [auditLogs, setAuditLogs] = useState(initialLogs);
   const [videos, setVideos] = useState<any[]>(initialVideos);
+  const [blogPosts, setBlogPosts] = useState<any[]>(initialBlogPosts);
 
   // Filters
   const [serverSearch, setServerSearch] = useState("");
@@ -529,6 +534,23 @@ export default function AdminDashboardClient({
               </div>
               <span className="text-[10px] text-zinc-500 font-mono">
                 {categories.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("blog")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+                activeTab === "blog"
+                  ? "bg-discord-blurple text-white shadow-glow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <BookOpen className="w-4 h-4 text-discord-blurple" />
+                <span>Blog & Articles</span>
+              </div>
+              <span className="text-[10px] text-zinc-500 font-mono">
+                {blogPosts.length}
               </span>
             </button>
 
@@ -1926,6 +1948,11 @@ export default function AdminDashboardClient({
               ))}
             </div>
           </div>
+        )}
+
+        {/* ==================== TAB: BLOG & ARTICLES ==================== */}
+        {activeTab === "blog" && (
+          <AdminBlogManager initialPosts={blogPosts} showToast={showToast} />
         )}
 
         {/* ==================== TAB: USERS ==================== */}

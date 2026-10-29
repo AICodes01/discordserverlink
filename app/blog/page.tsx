@@ -24,7 +24,7 @@ interface BlogPageProps {
 export const revalidate = 60;
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
-  const allPosts = getAllPosts();
+  const allPosts = await getAllPosts();
   const searchQuery = (searchParams?.q || "").toLowerCase().trim();
   const categoryFilter = searchParams?.category || "all";
 

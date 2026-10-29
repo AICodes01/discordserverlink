@@ -57,21 +57,33 @@ const CATEGORIES_HUB_FAQS: FAQItem[] = [
 export const revalidate = 60;
 
 export default async function CategoriesPage() {
-  const categories = await prisma.category.findMany({
-    orderBy: { displayOrder: "asc" },
-  });
+  let categories: any[] = [];
+  let countMap: Record<string, number> = {};
 
-  // Count servers per category
-  const counts = await prisma.server.groupBy({
-    by: ["categorySlug"],
-    where: { status: "APPROVED" },
-    _count: { id: true },
-  });
+  try {
+    categories = await prisma.category.findMany({
+      orderBy: { displayOrder: "asc" },
+    });
 
-  const countMap = counts.reduce((acc, curr) => {
-    acc[curr.categorySlug] = curr._count.id;
-    return acc;
-  }, {} as Record<string, number>);
+    // Count servers per category
+    const counts = await prisma.server.groupBy({
+      by: ["categorySlug"],
+      where: { status: "APPROVED" },
+      _count: { id: true },
+    });
+
+    countMap = counts.reduce((acc, curr) => {
+      acc[curr.categorySlug] = curr._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+  } catch (error) {
+    // Graceful fallback for local builds / offline database
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const seed = require("@/prisma/seed-data.json");
+      categories = seed.categories || [];
+    } catch {}
+  }
 
   const breadcrumbSchema = generateBreadcrumbSchema([
     { name: "Home", url: "/" },

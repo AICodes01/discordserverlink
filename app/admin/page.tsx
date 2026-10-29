@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
+import { getAllPosts } from "@/lib/blog";
 import AdminDashboardClient from "./AdminDashboardClient";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,7 @@ export default async function AdminPage() {
     yesterdayPageViews,
     deviceStats,
     recentVisitorLogs,
+    blogPosts,
   ] = await Promise.all([
     prisma.server.findMany({
       orderBy: { createdAt: "desc" },
@@ -98,6 +100,7 @@ export default async function AdminPage() {
     }),
     prisma.pageView.groupBy({ by: ["device"], _count: { device: true } }),
     prisma.pageView.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
+    getAllPosts(),
   ]);
 
   const [
@@ -141,6 +144,7 @@ export default async function AdminPage() {
       initialSettings={settingsMap}
       initialLogs={auditLogs}
       initialVideos={videosList}
+      initialBlogPosts={blogPosts}
       stats={{
         totalServers,
         pendingServers,
