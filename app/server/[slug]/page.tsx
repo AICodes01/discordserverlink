@@ -24,7 +24,6 @@ import ServerCard from "@/components/ServerCard";
 import ReviewForm from "./ReviewForm";
 import ShareModalButton from "./ShareModalButton";
 import { generateServerSchema, generateBreadcrumbSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
-import { getServerBannerUrl } from "@/lib/banners";
 
 export const revalidate = 60;
 
@@ -35,17 +34,26 @@ interface ServerPageProps {
 }
 
 export async function generateMetadata({ params }: ServerPageProps): Promise<Metadata> {
-  const server = await prisma.server.findUnique({
-    where: { slug: params.slug },
-    select: {
-      name: true,
-      shortDescription: true,
-      iconUrl: true,
-      bannerUrl: true,
-      memberCount: true,
-      categorySlug: true,
-    },
-  });
+  let server: any = null;
+  try {
+    server = await prisma.server.findUnique({
+      where: { slug: params.slug },
+      select: {
+        name: true,
+        shortDescription: true,
+        iconUrl: true,
+        bannerUrl: true,
+        memberCount: true,
+        categorySlug: true,
+      },
+    });
+  } catch {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const seed = require("@/prisma/seed-data.json");
+      server = (seed.servers || []).find((s: any) => s.slug === params.slug) || null;
+    } catch {}
+  }
 
   if (!server) {
     return {
@@ -54,14 +62,9 @@ export async function generateMetadata({ params }: ServerPageProps): Promise<Met
   }
 
   const title = `${server.name} Discord Server - Join Community`;
-  const description = `${server.name} has ${server.memberCount.toLocaleString()} members. ${server.shortDescription} Join on discordserverlink.com.`;
+  const description = `${server.name} has ${(server.memberCount || 0).toLocaleString()} members. ${server.shortDescription} Join on discordserverlink.com.`;
 
-  const bannerImage = getServerBannerUrl({
-    bannerUrl: server.bannerUrl,
-    categorySlug: server.categorySlug,
-    slug: params.slug,
-    name: server.name,
-  });
+  const bannerImage = server.bannerUrl || server.iconUrl || "/og-image.png";
 
   return {
     title,
@@ -93,54 +96,72 @@ export async function generateMetadata({ params }: ServerPageProps): Promise<Met
 }
 
 export default async function ServerDetailPage({ params }: ServerPageProps) {
-  const server = await prisma.server.findUnique({
-    where: { slug: params.slug },
-    include: {
-      owner: {
-        select: {
-          name: true,
-          username: true,
-          image: true,
+  let server: any = null;
+  let similarServers: any[] = [];
+
+  try {
+    server = await prisma.server.findUnique({
+      where: { slug: params.slug },
+      include: {
+        owner: {
+          select: {
+            name: true,
+            username: true,
+            image: true,
+          },
         },
-      },
-      reviews: {
-        where: { status: "APPROVED" },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        include: {
-          user: {
-            select: {
-              name: true,
-              username: true,
-              image: true,
+        reviews: {
+          where: { status: "APPROVED" },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                name: true,
+                username: true,
+                image: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+
+    if (server) {
+      similarServers = await prisma.server.findMany({
+        where: {
+          categorySlug: server.categorySlug,
+          id: { not: server.id },
+          status: "APPROVED",
+        },
+        orderBy: { bumpsCount: "desc" },
+        take: 3,
+      });
+    }
+  } catch {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const seed = require("@/prisma/seed-data.json");
+      server = (seed.servers || []).find((s: any) => s.slug === params.slug) || null;
+      if (server) {
+        similarServers = (seed.servers || [])
+          .filter((s: any) => s.categorySlug === server.categorySlug && s.slug !== server.slug)
+          .slice(0, 3);
+        if (!server.reviews) server.reviews = [];
+      }
+    } catch {}
+  }
 
   if (!server) {
     notFound();
   }
 
-  // Fetch similar servers in the same category
-  const similarServers = await prisma.server.findMany({
-    where: {
-      categorySlug: server.categorySlug,
-      id: { not: server.id },
-      status: "APPROVED",
-    },
-    orderBy: { bumpsCount: "desc" },
-    take: 3,
-  });
-
   // Calculate average rating
-  const reviewCount = server.reviews.length;
+  const reviewCount = server.reviews?.length || 0;
   const avgRating =
     reviewCount > 0
       ? (
-          server.reviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount
+          server.reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / reviewCount
         ).toFixed(1)
       : "5.0";
 
@@ -162,19 +183,23 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
     { name: server.name, url: `/server/${server.slug}` },
   ]);
 
-  const tags = server.tags
-    ? server.tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean)
-    : [];
+  const tags: string[] =
+    typeof server.tags === "string"
+      ? server.tags
+          .split(",")
+          .map((t: string) => t.trim())
+          .filter(Boolean)
+      : [];
 
   // Fetch category name
-  const category = await prisma.category.findUnique({
-    where: { slug: server.categorySlug },
-    select: { name: true },
-  });
-  const categoryName = category?.name || server.categorySlug;
+  let categoryName = server.categorySlug;
+  try {
+    const category = await prisma.category.findUnique({
+      where: { slug: server.categorySlug },
+      select: { name: true },
+    });
+    if (category?.name) categoryName = category.name;
+  } catch {}
 
   const submitterName =
     server.owner?.name || server.owner?.username || "Community Staff";
@@ -199,22 +224,16 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
 
       {/* Hero Banner Header */}
       <div className="relative h-64 sm:h-80 w-full bg-zinc-950 overflow-hidden">
-        {/* Ambient Blurred Icon Backdrop */}
-        {server.iconUrl && (
+        {server.bannerUrl ? (
           <img
-            src={server.iconUrl}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-40 brightness-75 pointer-events-none"
+            src={server.bannerUrl}
+            alt={`${server.name} banner`}
+            className="w-full h-full object-cover filter brightness-[0.7]"
           />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-r from-zinc-900 via-indigo-950/60 to-zinc-900" />
         )}
-        {/* Banner Image */}
-        <img
-          src={getServerBannerUrl(server)}
-          alt={`${server.name} banner`}
-          className="relative z-[1] w-full h-full object-cover filter brightness-[0.75] contrast-[1.05]"
-        />
-        <div className="absolute inset-0 z-[2] bg-gradient-to-t from-[#0c0e14] via-[#0c0e14]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0e14] via-[#0c0e14]/40 to-transparent" />
       </div>
 
       {/* Main Container */}
@@ -427,7 +446,7 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
 
               {/* Review List */}
               <div className="space-y-4 pt-4">
-                {server.reviews.map((rev) => (
+                {server.reviews.map((rev: any) => (
                   <div
                     key={rev.id}
                     className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-2"

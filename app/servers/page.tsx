@@ -61,19 +61,49 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
     orderBy = { bumpsCount: "desc" };
   }
 
-  const [servers, totalCount, categories] = await Promise.all([
-    prisma.server.findMany({
-      where,
-      orderBy,
-      skip,
-      take: limit,
-    }),
-    prisma.server.count({ where }),
-    prisma.category.findMany({
-      orderBy: { displayOrder: "asc" },
-      select: { name: true, slug: true },
-    }),
-  ]);
+  let servers: any[] = [];
+  let totalCount = 0;
+  let categories: any[] = [];
+
+  try {
+    const [dbServers, dbTotal, dbCats] = await Promise.all([
+      prisma.server.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.server.count({ where }),
+      prisma.category.findMany({
+        orderBy: { displayOrder: "asc" },
+        select: { name: true, slug: true },
+      }),
+    ]);
+    servers = dbServers;
+    totalCount = dbTotal;
+    categories = dbCats;
+  } catch {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const seed = require("@/prisma/seed-data.json");
+      categories = seed.categories || [];
+      let list = seed.servers || [];
+      if (category) {
+        list = list.filter((s: any) => s.categorySlug === category);
+      }
+      if (query) {
+        const q = query.toLowerCase();
+        list = list.filter(
+          (s: any) =>
+            s.name?.toLowerCase().includes(q) ||
+            s.shortDescription?.toLowerCase().includes(q) ||
+            s.tags?.toLowerCase().includes(q)
+        );
+      }
+      totalCount = list.length;
+      servers = list.slice(skip, skip + limit);
+    } catch {}
+  }
 
   const totalPages = Math.ceil(totalCount / limit);
 

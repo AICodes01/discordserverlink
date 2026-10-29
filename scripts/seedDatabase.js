@@ -49,81 +49,9 @@ async function syncBlogPosts() {
   }
 }
 
-const CATEGORY_BANNERS = {
-  gaming: [
-    "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&auto=format&fit=crop&q=80",
-  ],
-  anime: [
-    "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80",
-  ],
-  technology: [
-    "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80",
-  ],
-  community: [
-    "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=1200&auto=format&fit=crop&q=80",
-  ],
-  music: [
-    "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&auto=format&fit=crop&q=80",
-  ],
-  education: [
-    "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1200&auto=format&fit=crop&q=80",
-  ],
-  finance: [
-    "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&auto=format&fit=crop&q=80",
-  ],
-  art: [
-    "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1200&auto=format&fit=crop&q=80",
-  ],
-};
-
-function getDefaultBanner(categorySlug, seed) {
-  const cat = (categorySlug || "gaming").toLowerCase().trim();
-  const list = CATEGORY_BANNERS[cat] || CATEGORY_BANNERS.gaming;
-  if (seed) {
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      hash = (hash << 5) - hash + seed.charCodeAt(i);
-      hash |= 0;
-    }
-    const idx = Math.abs(hash) % list.length;
-    return list[idx];
-  }
-  return list[0];
-}
-
-async function syncServerBanners() {
-  try {
-    const serversWithoutBanner = await prisma.server.findMany({
-      where: { bannerUrl: null },
-      select: { id: true, slug: true, name: true, categorySlug: true },
-      take: 2000,
-    });
-    if (serversWithoutBanner.length > 0) {
-      console.log(`Populating bannerUrl for ${serversWithoutBanner.length} servers in database...`);
-      for (const s of serversWithoutBanner) {
-        try {
-          const banner = getDefaultBanner(s.categorySlug, s.slug || s.name);
-          await prisma.server.update({
-            where: { id: s.id },
-            data: { bannerUrl: banner },
-          });
-        } catch (e) {}
-      }
-      console.log(`✓ Updated server banners in PostgreSQL`);
-    }
-  } catch (err) {
-    console.warn("Could not sync server banners:", err.message);
-  }
-}
-
 async function main() {
   // 1. Always synchronize blog posts first so all 14 articles exist in PostgreSQL
   await syncBlogPosts();
-
-  // 2. Always populate missing banners for existing servers
-  await syncServerBanners();
 
   let serverCount = 0;
   try {

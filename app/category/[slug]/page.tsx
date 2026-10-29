@@ -85,9 +85,18 @@ function renderCategoryIcon(iconName: string, className = "w-5 h-5") {
 }
 
 export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
-  const category = await prisma.category.findUnique({
-    where: { slug: params.slug },
-  });
+  let category: any = null;
+  try {
+    category = await prisma.category.findUnique({
+      where: { slug: params.slug },
+    });
+  } catch {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const seed = require("@/prisma/seed-data.json");
+      category = (seed.categories || []).find((c: any) => c.slug === params.slug) || null;
+    } catch {}
+  }
 
   if (!category) {
     return { title: "Category Not Found" };
@@ -125,35 +134,56 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
 }
 
 export default async function CategoryDetailPage({ params, searchParams }: CategoryPageProps) {
-  const category = await prisma.category.findUnique({
-    where: { slug: params.slug },
-  });
-
-  if (!category) {
-    notFound();
-  }
+  let category: any = null;
+  let servers: any[] = [];
+  let totalCount = 0;
 
   const page = Math.max(1, parseInt(searchParams?.page || "1", 10));
   const limit = 24;
   const skip = (page - 1) * limit;
 
-  const [servers, totalCount] = await Promise.all([
-    prisma.server.findMany({
-      where: {
-        categorySlug: category.slug,
-        status: "APPROVED",
-      },
-      orderBy: { lastBumpedAt: "desc" },
-      skip,
-      take: limit,
-    }),
-    prisma.server.count({
-      where: {
-        categorySlug: category.slug,
-        status: "APPROVED",
-      },
-    }),
-  ]);
+  try {
+    category = await prisma.category.findUnique({
+      where: { slug: params.slug },
+    });
+
+    if (category) {
+      const [dbServers, dbTotal] = await Promise.all([
+        prisma.server.findMany({
+          where: {
+            categorySlug: category.slug,
+            status: "APPROVED",
+          },
+          orderBy: { lastBumpedAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.server.count({
+          where: {
+            categorySlug: category.slug,
+            status: "APPROVED",
+          },
+        }),
+      ]);
+      servers = dbServers;
+      totalCount = dbTotal;
+    }
+  } catch {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const seed = require("@/prisma/seed-data.json");
+      category = (seed.categories || []).find((c: any) => c.slug === params.slug) || null;
+      if (category) {
+        const catServers = (seed.servers || []).filter((s: any) => s.categorySlug === category.slug);
+        totalCount = catServers.length;
+        servers = catServers.slice(skip, skip + limit);
+      }
+    } catch {}
+  }
+
+  if (!category) {
+    notFound();
+  }
 
   const totalPages = Math.ceil(totalCount / limit);
 
