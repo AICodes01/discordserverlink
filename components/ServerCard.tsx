@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Award, Sparkles, Users, Radio, ExternalLink } from "lucide-react";
+import { getDefaultBanner } from "@/lib/banners";
 
 interface ServerCardProps {
   server: {
@@ -24,6 +26,11 @@ interface ServerCardProps {
 }
 
 export default function ServerCard({ server }: ServerCardProps) {
+  const fallbackBanner = getDefaultBanner(server.categorySlug, server.slug || server.name);
+  const [bannerSrc, setBannerSrc] = useState<string>(
+    server.bannerUrl && server.bannerUrl.trim().length > 0 ? server.bannerUrl.trim() : fallbackBanner
+  );
+
   const tagsList = server.tags
     ? server.tags
         .split(",")
@@ -46,17 +53,28 @@ export default function ServerCard({ server }: ServerCardProps) {
     <div className="group relative rounded-2xl bg-zinc-900/80 border border-zinc-800/80 hover:border-discord-blurple/50 transition-all duration-300 hover:shadow-glow flex flex-col overflow-hidden">
       {/* Banner Area */}
       <div className="relative h-28 w-full bg-gradient-to-r from-zinc-800 via-indigo-950/40 to-zinc-900 overflow-hidden">
-        {server.bannerUrl ? (
+        {/* Ambient Blurred Icon Backdrop */}
+        {server.iconUrl && (
           <img
-            src={server.bannerUrl}
-            alt={`${server.name} banner`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
+            src={server.iconUrl}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover blur-2xl scale-150 opacity-40 brightness-75 pointer-events-none"
           />
-        ) : (
-          <div className="w-full h-full opacity-30 bg-[radial-gradient(#5865F2_1px,transparent_1px)] [background-size:16px_16px]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/30 to-transparent" />
+        {/* Banner Image */}
+        <img
+          src={bannerSrc}
+          alt={`${server.name} banner`}
+          className="relative z-[1] w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+          onError={() => {
+            if (bannerSrc !== fallbackBanner) {
+              setBannerSrc(fallbackBanner);
+            }
+          }}
+        />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
 
         {/* Badges on Banner */}
         <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">

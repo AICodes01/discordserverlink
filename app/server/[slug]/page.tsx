@@ -24,6 +24,7 @@ import ServerCard from "@/components/ServerCard";
 import ReviewForm from "./ReviewForm";
 import ShareModalButton from "./ShareModalButton";
 import { generateServerSchema, generateBreadcrumbSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
+import { getServerBannerUrl } from "@/lib/banners";
 
 export const revalidate = 60;
 
@@ -55,6 +56,13 @@ export async function generateMetadata({ params }: ServerPageProps): Promise<Met
   const title = `${server.name} Discord Server - Join Community`;
   const description = `${server.name} has ${server.memberCount.toLocaleString()} members. ${server.shortDescription} Join on discordserverlink.com.`;
 
+  const bannerImage = getServerBannerUrl({
+    bannerUrl: server.bannerUrl,
+    categorySlug: server.categorySlug,
+    slug: params.slug,
+    name: server.name,
+  });
+
   return {
     title,
     description,
@@ -68,7 +76,7 @@ export async function generateMetadata({ params }: ServerPageProps): Promise<Met
       siteName: SITE_NAME,
       images: [
         {
-          url: server.bannerUrl || server.iconUrl || "/og-image.png",
+          url: bannerImage,
           width: 1200,
           height: 630,
           alt: `${server.name} Discord banner`,
@@ -79,7 +87,7 @@ export async function generateMetadata({ params }: ServerPageProps): Promise<Met
       card: "summary_large_image",
       title: `${server.name} Discord Server`,
       description,
-      images: [server.bannerUrl || server.iconUrl || "/og-image.png"],
+      images: [bannerImage],
     },
   };
 }
@@ -190,17 +198,23 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
       />
 
       {/* Hero Banner Header */}
-      <div className="relative h-64 sm:h-80 w-full bg-zinc-900 overflow-hidden">
-        {server.bannerUrl ? (
+      <div className="relative h-64 sm:h-80 w-full bg-zinc-950 overflow-hidden">
+        {/* Ambient Blurred Icon Backdrop */}
+        {server.iconUrl && (
           <img
-            src={server.bannerUrl}
-            alt={`${server.name} banner`}
-            className="w-full h-full object-cover filter brightness-[0.7]"
+            src={server.iconUrl}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover blur-3xl scale-150 opacity-40 brightness-75 pointer-events-none"
           />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-r from-zinc-900 via-indigo-950/60 to-zinc-900" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0e14] via-[#0c0e14]/50 to-transparent" />
+        {/* Banner Image */}
+        <img
+          src={getServerBannerUrl(server)}
+          alt={`${server.name} banner`}
+          className="relative z-[1] w-full h-full object-cover filter brightness-[0.75] contrast-[1.05]"
+        />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-t from-[#0c0e14] via-[#0c0e14]/50 to-transparent" />
       </div>
 
       {/* Main Container */}
