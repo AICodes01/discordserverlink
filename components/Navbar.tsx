@@ -4,7 +4,10 @@ import NextLink from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
-  Compass,
+  Server,
+  Bot,
+  Smile,
+  Wrench,
   PlusCircle,
   ShieldAlert,
   Search,
@@ -12,8 +15,6 @@ import {
   X,
   User,
   LogOut,
-  Layers,
-  Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -78,25 +79,32 @@ export default function Navbar() {
           {/* Nav Items */}
           <nav className="hidden lg:flex items-center space-x-1">
             <NextLink
-              href="/servers"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors flex items-center space-x-1.5"
-            >
-              <Compass className="w-4 h-4 text-discord-blurple" />
-              <span>Explore</span>
-            </NextLink>
-            <NextLink
               href="/categories"
               className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors flex items-center space-x-1.5"
             >
-              <Layers className="w-4 h-4 text-zinc-400" />
-              <span>Categories</span>
+              <Server className="w-4 h-4 text-discord-blurple" />
+              <span>Server</span>
             </NextLink>
             <NextLink
-              href="/servers?sort=bumped"
+              href="/bots"
               className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors flex items-center space-x-1.5"
             >
-              <Sparkles className="w-4 h-4 text-discord-yellow" />
-              <span>Trending</span>
+              <Bot className="w-4 h-4 text-indigo-400" />
+              <span>Bots</span>
+            </NextLink>
+            <NextLink
+              href="/emojis"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors flex items-center space-x-1.5"
+            >
+              <Smile className="w-4 h-4 text-amber-400" />
+              <span>Emojis</span>
+            </NextLink>
+            <NextLink
+              href="/tools"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors flex items-center space-x-1.5"
+            >
+              <Wrench className="w-4 h-4 text-emerald-400" />
+              <span>Tools</span>
             </NextLink>
           </nav>
 
@@ -220,20 +228,36 @@ export default function Navbar() {
 
           <div className="flex flex-col space-y-1">
             <NextLink
-              href="/servers"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 transition flex items-center space-x-2"
-            >
-              <Compass className="w-5 h-5 text-discord-blurple" />
-              <span>Explore Servers</span>
-            </NextLink>
-            <NextLink
               href="/categories"
               onClick={() => setMobileMenuOpen(false)}
               className="px-3 py-2 rounded-lg text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 transition flex items-center space-x-2"
             >
-              <Layers className="w-5 h-5 text-zinc-400" />
-              <span>All Categories</span>
+              <Server className="w-5 h-5 text-discord-blurple" />
+              <span>Server</span>
+            </NextLink>
+            <NextLink
+              href="/bots"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 transition flex items-center space-x-2"
+            >
+              <Bot className="w-5 h-5 text-indigo-400" />
+              <span>Bots</span>
+            </NextLink>
+            <NextLink
+              href="/emojis"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 transition flex items-center space-x-2"
+            >
+              <Smile className="w-5 h-5 text-amber-400" />
+              <span>Emojis</span>
+            </NextLink>
+            <NextLink
+              href="/tools"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 transition flex items-center space-x-2"
+            >
+              <Wrench className="w-5 h-5 text-emerald-400" />
+              <span>Tools</span>
             </NextLink>
             <NextLink
               href="/servers/new"
@@ -241,7 +265,7 @@ export default function Navbar() {
               className="px-3 py-2 rounded-lg text-base font-medium text-discord-blurple hover:bg-zinc-900 transition flex items-center space-x-2"
             >
               <PlusCircle className="w-5 h-5" />
-              <span>+ Add Your Server</span>
+              <span>+ Add Server</span>
             </NextLink>
             {isAdmin && (
               <NextLink

@@ -117,7 +117,7 @@ export default function Footer() {
           {/* Links & Legal */}
           <div>
             <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-wider mb-4">
-              Platform
+              Platform & Tools
             </h3>
             <ul className="space-y-2 text-sm">
               <li>
@@ -126,23 +126,28 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/servers?sort=bumped" className="hover:text-white transition">
-                  Recently Bumped
+                <Link href="/categories" className="hover:text-white transition">
+                  Server Categories
                 </Link>
               </li>
               <li>
-                <Link href="/servers?sort=members" className="hover:text-white transition">
-                  Most Popular
+                <Link href="/bots" className="hover:text-white transition">
+                  Discord Bots
+                </Link>
+              </li>
+              <li>
+                <Link href="/emojis" className="hover:text-white transition">
+                  Discord Emojis
+                </Link>
+              </li>
+              <li>
+                <Link href="/tools" className="hover:text-white transition">
+                  Free Discord Tools
                 </Link>
               </li>
               <li>
                 <Link href="/sitemap.xml" className="hover:text-white transition">
                   XML Sitemap
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="text-zinc-500 hover:text-zinc-300 transition text-xs">
-                  Admin Panel
                 </Link>
               </li>
             </ul>
