@@ -1,6 +1,6 @@
 # DiscordServerLink (discordserverlink.com) 🚀
 
-> An ultra-fast, SEO-optimized Discord server directory and community sharing platform inspired by [discordservers.com](https://discordservers.com/) and Disboard.
+> An ultra-fast, SEO-optimized Discord server directory and community sharing platform.
 
 Built with **Next.js 14 (App Router)**, **TypeScript**, **Tailwind CSS**, **Prisma ORM**, and **NextAuth.js**.
 
