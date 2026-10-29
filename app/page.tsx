@@ -1,7 +1,7 @@
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import ServerCard from "@/components/ServerCard";
-import BlogCard from "@/components/BlogCard";
+import BlogSlider from "@/components/BlogSlider";
 import { getAllPosts } from "@/lib/blog";
 import {
   Compass,
@@ -20,7 +20,6 @@ import {
   Palette,
   Layers,
   ArrowRight,
-  BookOpen,
 } from "lucide-react";
 
 // Icon mapping for categories
@@ -335,37 +334,8 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Latest Blog & Guides Section */}
-        {latestBlogPosts.length > 0 && (
-          <div className="mt-16 pt-12 border-t border-zinc-800/80 space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center space-x-3">
-                <div className="p-2.5 rounded-2xl bg-discord-blurple/10 border border-discord-blurple/20 text-discord-blurple shadow-glow-sm">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black text-white">Latest Discord Guides & Lists</h2>
-                  <p className="text-xs sm:text-sm text-zinc-400">
-                    Hand-curated server lists, bot recommendations, and community growth insights
-                  </p>
-                </div>
-              </div>
-              <Link
-                href="/blog"
-                className="text-xs sm:text-sm font-semibold text-discord-blurple hover:text-white transition-colors flex items-center gap-1.5 shrink-0"
-              >
-                <span>View all articles</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {latestBlogPosts.map((post) => (
-                <BlogCard key={post.slug} post={post} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Latest Blog & Guides Slider Section */}
+        {latestBlogPosts.length > 0 && <BlogSlider posts={latestBlogPosts} />}
       </section>
 
       {/* SEO Content & FAQ Section */}
