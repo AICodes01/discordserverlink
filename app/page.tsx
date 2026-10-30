@@ -123,11 +123,22 @@ export default async function HomePage() {
           </h1>
 
           {/* Subheading */}
-          <p className="mt-5 text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-5 text-base sm:text-lg text-zinc-400 max-w-3xl mx-auto leading-relaxed">
             Welcome to{" "}
-            <span className="font-semibold text-zinc-200">discordserverlink.com</span>. The
-            ultra-fast Discord server list. Find active voice chats, gaming squads, anime hubs,
-            and software developer circles.
+            <span className="font-semibold text-zinc-200">discordserverlink.com</span> — the
+            ultra-fast, 100% free Discord server list featuring over{" "}
+            <span className="text-zinc-200 font-semibold">
+              {totalServers.toLocaleString()}+
+            </span>{" "}
+            listed servers,{" "}
+            <span className="text-zinc-200 font-semibold">
+              {totalMembers.toLocaleString()}+
+            </span>{" "}
+            total members, and{" "}
+            <span className="text-zinc-200 font-semibold">
+              {totalBumps.toLocaleString()}+
+            </span>{" "}
+            bumps. Find active voice chats, gaming squads, anime hubs, and software developer circles.
           </p>
 
           {/* Large Hero Search */}
@@ -162,34 +173,6 @@ export default async function HomePage() {
                   </Link>
                 )
               )}
-            </div>
-          </div>
-
-          {/* Key Metric Counters */}
-          <div className="mt-14 pt-8 border-t border-zinc-800/60 grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <div className="flex flex-col items-center">
-              <span className="text-2xl sm:text-3xl font-black text-white">
-                {totalServers.toLocaleString()}+
-              </span>
-              <span className="text-xs text-zinc-400 mt-1">Listed Servers</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl sm:text-3xl font-black text-discord-green">
-                {totalMembers.toLocaleString()}+
-              </span>
-              <span className="text-xs text-zinc-400 mt-1">Total Members</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl sm:text-3xl font-black text-discord-yellow">
-                {totalBumps.toLocaleString()}+
-              </span>
-              <span className="text-xs text-zinc-400 mt-1">Total Bumps</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-2xl sm:text-3xl font-black text-discord-blurple">
-                100% Free
-              </span>
-              <span className="text-xs text-zinc-400 mt-1">Instant Listing</span>
             </div>
           </div>
         </div>
