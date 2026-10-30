@@ -165,6 +165,15 @@ export default function Navbar() {
                       <span>Add Discord Server</span>
                     </NextLink>
 
+                    <NextLink
+                      href="/bots/new"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
+                    >
+                      <Bot className="w-4 h-4 text-indigo-400" />
+                      <span>Add Discord Bot</span>
+                    </NextLink>
+
                     {isAdmin && (
                       <NextLink
                         href="/admin"
@@ -266,6 +275,14 @@ export default function Navbar() {
             >
               <PlusCircle className="w-5 h-5" />
               <span>+ Add Server</span>
+            </NextLink>
+            <NextLink
+              href="/bots/new"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-indigo-400 hover:bg-zinc-900 transition flex items-center space-x-2"
+            >
+              <Bot className="w-5 h-5" />
+              <span>+ Add Bot</span>
             </NextLink>
             {isAdmin && (
               <NextLink

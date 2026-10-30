@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
-import { DISCORD_BOTS, BOT_CATEGORIES } from "@/lib/botsData";
+import { getAllBots, BOT_CATEGORIES } from "@/lib/botsData";
 import BotCard from "@/components/BotCard";
 import {
   CheckCircle2,
@@ -25,8 +25,11 @@ interface BotDetailPageProps {
   };
 }
 
+export const dynamicParams = true;
+export const revalidate = 0;
+
 export async function generateStaticParams() {
-  return DISCORD_BOTS.map((bot) => ({
+  return getAllBots().map((bot) => ({
     slug: bot.slug,
   }));
 }
@@ -34,7 +37,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: BotDetailPageProps): Promise<Metadata> {
-  const bot = DISCORD_BOTS.find((b) => b.slug === params.slug);
+  const allBots = getAllBots();
+  const bot = allBots.find((b) => b.slug.toLowerCase() === params.slug.toLowerCase());
   if (!bot) {
     return { title: "Discord Bot Not Found - DiscordServerLink" };
   }
@@ -57,13 +61,14 @@ export async function generateMetadata({
 }
 
 export default function BotDetailPage({ params }: BotDetailPageProps) {
-  const bot = DISCORD_BOTS.find((b) => b.slug === params.slug);
+  const allBots = getAllBots();
+  const bot = allBots.find((b) => b.slug.toLowerCase() === params.slug.toLowerCase());
   if (!bot) notFound();
 
   // Find similar bots in the same category
-  const similarBots = DISCORD_BOTS.filter(
-    (b) => b.category === bot.category && b.id !== bot.id
-  ).slice(0, 3);
+  const similarBots = allBots
+    .filter((b) => b.category === bot.category && b.id !== bot.id)
+    .slice(0, 3);
 
   const breadcrumbs = generateBreadcrumbSchema([
     { name: "Home", url: "/" },

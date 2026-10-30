@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import prisma from "@/lib/prisma";
 import { SITE_URL } from "@/lib/seo";
+import { getAllBots } from "@/lib/botsData";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
@@ -23,6 +24,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(),
         changeFrequency: "weekly",
         priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/bots`,
+        lastModified: new Date(),
+        changeFrequency: "daily",
+        priority: 0.9,
+      },
+      {
+        url: `${SITE_URL}/bots/new`,
+        lastModified: new Date(),
+        changeFrequency: "monthly",
+        priority: 0.7,
       },
       {
         url: `${SITE_URL}/servers/new`,
@@ -71,7 +84,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.75,
     }));
 
-    return [...staticRoutes, ...categoryRoutes, ...tagRoutes, ...serverRoutes];
+    // 5. Bot Pages
+    const allBots = getAllBots();
+    const botRoutes: MetadataRoute.Sitemap = allBots.map((b) => ({
+      url: `${SITE_URL}/bot/${b.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    }));
+
+    return [
+      ...staticRoutes,
+      ...categoryRoutes,
+      ...tagRoutes,
+      ...serverRoutes,
+      ...botRoutes,
+    ];
   } catch (error) {
     console.error("Sitemap generation error:", error);
     return [

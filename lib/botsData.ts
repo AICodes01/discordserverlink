@@ -1,3 +1,4 @@
+import customBotsJson from "./customBots.json";
 export interface DiscordBot {
   id: string;
   name: string;
@@ -1053,3 +1054,29 @@ export const DISCORD_BOTS: DiscordBot[] = [
     features: ["Low-latency voice streaming", "10-band equalizer presets", "Customizable volume multiplier", "Clean queue display with durations", "Looped song and playlist modes"],
   },
 ];
+
+
+export function getAllBots(): DiscordBot[] {
+  let customList = (customBotsJson as DiscordBot[]) || [];
+  if (typeof window === "undefined") {
+    try {
+      const fsModule = require("fs");
+      const pathModule = require("path");
+      const jsonPath = pathModule.join(process.cwd(), "lib", "customBots.json");
+      if (fsModule.existsSync(jsonPath)) {
+        const fileData = fsModule.readFileSync(jsonPath, "utf-8");
+        const parsed = JSON.parse(fileData);
+        if (Array.isArray(parsed)) {
+          customList = parsed;
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+  return [...customList, ...DISCORD_BOTS];
+}
+
+export function getBotBySlug(slug: string): DiscordBot | undefined {
+  return getAllBots().find((b) => b.slug.toLowerCase() === slug.toLowerCase());
+}
