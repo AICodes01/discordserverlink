@@ -2,6 +2,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import ServerCard from "@/components/ServerCard";
 import BlogSlider from "@/components/BlogSlider";
+import HomeSEOContent from "@/components/HomeSEOContent";
 import { getAllPosts } from "@/lib/blog";
 import {
   Compass,
@@ -321,47 +322,8 @@ export default async function HomePage() {
         {latestBlogPosts.length > 0 && <BlogSlider posts={latestBlogPosts} />}
       </section>
 
-      {/* SEO Content & FAQ Section */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="border-t border-zinc-800/80 pt-12 space-y-8">
-          <div>
-            <h2 className="text-2xl font-black text-white mb-3">
-              About DiscordServerLink Directory
-            </h2>
-            <p className="text-sm text-zinc-400 leading-relaxed">
-              DiscordServerLink (discordserverlink.com) is the fastest Discord server listing and
-              sharing platform designed for community leaders and passionate gamers. Whether you
-              are searching for competitive gaming squads, anime fan clubs, software programming
-              mentors, or casual voice channels to unwind after work, our categorized directory
-              connects you in seconds.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800">
-              <h3 className="text-base font-bold text-white mb-2">
-                How do I add my server?
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Click on the "+ Add Server" button in the navigation bar. Paste your Discord
-                invite link. Our server automatically retrieves your icon, banner, and member
-                counts! You can customize tags, descriptions, and publish immediately.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800">
-              <h3 className="text-base font-bold text-white mb-2">
-                What is the Server Bump feature?
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Bumping refreshes your server's ranking on the home page and category feeds.
-                Members of your community can bump your server every 2 hours to keep it at the top
-                of search results!
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* SEO Content & Comprehensive Guide Section */}
+      <HomeSEOContent />
     </div>
   );
 }
