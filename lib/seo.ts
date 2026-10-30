@@ -78,3 +78,20 @@ export function generateFAQSchema(faqs: { question: string; answer: string }[]) 
     })),
   };
 }
+
+export function generateItemListSchema(
+  items: { name: string; url: string; image?: string | null; position?: number }[]
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Top Discord Servers List 2026",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: item.position || index + 1,
+      name: item.name,
+      url: item.url.startsWith("http") ? item.url : `${SITE_URL}${item.url}`,
+      ...(item.image ? { image: item.image } : {}),
+    })),
+  };
+}

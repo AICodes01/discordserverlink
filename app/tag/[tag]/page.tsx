@@ -85,23 +85,40 @@ export default async function TagDetailPage({ params, searchParams }: TagPagePro
   const limit = 24;
   const skip = (page - 1) * limit;
 
-  const [servers, totalCount] = await Promise.all([
-    prisma.server.findMany({
-      where: {
-        tags: { contains: tagName },
-        status: "APPROVED",
-      },
-      orderBy: { lastBumpedAt: "desc" },
-      skip,
-      take: limit,
-    }),
-    prisma.server.count({
-      where: {
-        tags: { contains: tagName },
-        status: "APPROVED",
-      },
-    }),
-  ]);
+  let servers: any[] = [];
+  let totalCount = 0;
+
+  try {
+    const [dbServers, dbTotal] = await Promise.all([
+      prisma.server.findMany({
+        where: {
+          tags: { contains: tagName },
+          status: "APPROVED",
+        },
+        orderBy: { lastBumpedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.server.count({
+        where: {
+          tags: { contains: tagName },
+          status: "APPROVED",
+        },
+      }),
+    ]);
+    servers = dbServers;
+    totalCount = dbTotal;
+  } catch {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const seed = require("@/prisma/seed-data.json");
+      const matched = (seed.servers || []).filter(
+        (s: any) => s.tags && s.tags.toLowerCase().includes(tagName)
+      );
+      totalCount = matched.length;
+      servers = matched.slice(skip, skip + limit);
+    } catch {}
+  }
 
   const totalPages = Math.ceil(totalCount / limit);
 

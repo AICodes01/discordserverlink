@@ -1,9 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import ServerCard from "@/components/ServerCard";
 import BlogSlider from "@/components/BlogSlider";
 import HomeSEOContent from "@/components/HomeSEOContent";
 import { getAllPosts } from "@/lib/blog";
+import { generateItemListSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
 import {
   Compass,
   Sparkles,
@@ -22,6 +24,37 @@ import {
   Layers,
   ArrowRight,
 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Discord Servers List (2026) - Find, Join & Promote Top Communities | DiscordServerLink",
+  description:
+    "Explore 5,300+ active Discord servers. Find gaming squads, anime hubs, coding groups, and chill voice chats. Join instantly or add your server for free on discordserverlink.com!",
+  alternates: {
+    canonical: SITE_URL,
+  },
+  openGraph: {
+    title: "Discord Servers List 2026 - Best Discord Servers to Join",
+    description:
+      "Explore 5,300+ active Discord servers with direct invite links, member counts, and live bumps. Add your server for free on DiscordServerLink.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} - Top Discord Server Directory`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Discord Servers List 2026 - DiscordServerLink",
+    description:
+      "Discover active Discord servers for gaming, anime, tech, and chill chats.",
+    images: ["/og-image.png"],
+  },
+};
 
 // Icon mapping for categories
 const categoryIcons: Record<string, any> = {
@@ -100,8 +133,26 @@ export default async function HomePage() {
     latestBlogPosts = allBlogPosts;
   }
 
+  // Generate ItemList schema for top featured servers for Google Carousel SERPs
+  const itemListSchema = generateItemListSchema(
+    (featuredServers.length > 0 ? featuredServers : recentlyBumpedServers)
+      .slice(0, 10)
+      .map((s, idx) => ({
+        name: s.name,
+        url: `/server/${s.slug}`,
+        image: s.iconUrl,
+        position: idx + 1,
+      }))
+  );
+
   return (
     <div className="space-y-16 pb-16">
+      {/* ItemList Structured Schema for Google Rich Results */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28 border-b border-zinc-800/60 bg-gradient-to-b from-indigo-950/20 via-zinc-950 to-zinc-950">
         {/* Ambient glow backgrounds */}
