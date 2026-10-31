@@ -34,6 +34,16 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: "/tools/pfp-viewer",
+        destination: "/tools/discord-pfp-viewer",
+        permanent: true,
+      },
+      {
+        source: "/tools/discord-pfp",
+        destination: "/tools/discord-pfp-viewer",
+        permanent: true,
+      },
+      {
         source: "/best-anime-discord-server-links",
         destination: "/blog/best-anime-discord-server-links",
         permanent: true,

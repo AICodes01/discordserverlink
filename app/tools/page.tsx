@@ -11,12 +11,13 @@ import {
   ArrowRight,
   ShieldCheck,
   Sparkles,
+  User,
 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Free Discord Tools & Utilities 2026 - DiscordServerLink",
   description:
-    "Collection of free Discord tools: Discord Invite Link Inspector, Permissions Calculator, Snowflake to Timestamp ID Finder, Colored ANSI Text Formatter, Webhook Sender, and Fancy Fonts.",
+    "Collection of free Discord tools: Discord PFP Viewer & Grabber, Discord Invite Link Inspector, Permissions Calculator, Snowflake to Timestamp ID Finder, Colored ANSI Text Formatter, Webhook Sender, and Fancy Fonts.",
   alternates: {
     canonical: "https://discordserverlink.com/tools",
   },
@@ -36,6 +37,24 @@ interface ToolItem {
 }
 
 const TOOLS_LIST: ToolItem[] = [
+  {
+    id: "tool-discord-pfp-viewer",
+    slug: "discord-pfp-viewer",
+    title: "Discord PFP Viewer & Grabber",
+    category: "Profile Utility",
+    badge: "New",
+    badgeColor: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
+    icon: User,
+    color: "from-indigo-600 to-purple-600",
+    description:
+      "View and download any Discord user's profile picture (avatar) and server banner in original high quality (1024x1024) or animated GIF using just their User ID.",
+    features: [
+      "Full HD 1024×1024 raw image download",
+      "Automatic Nitro GIF animated avatar detection",
+      "Profile banner & accent color grabber",
+      "100% anonymous with no login required",
+    ],
+  },
   {
     id: "tool-invite-checker",
     slug: "invite-checker",
@@ -131,7 +150,7 @@ export default function ToolsHubPage() {
             Discord <span className="text-emerald-400">Tools & Utilities</span> Hub
           </h1>
           <p className="text-zinc-300 text-sm sm:text-base leading-relaxed">
-            Free, powerful web tools built for Discord server owners, bot developers, moderators, and community members. Inspect invites, calculate permissions, format colored text, and decode snowflake IDs.
+            Free, powerful web tools built for Discord server owners, bot developers, moderators, and community members. Grab user PFPs, inspect invites, calculate permissions, format colored text, and decode snowflake IDs.
           </p>
         </div>
       </div>

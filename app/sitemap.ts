@@ -43,6 +43,60 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly",
         priority: 0.7,
       },
+      {
+        url: `${SITE_URL}/emojis`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/tools`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.85,
+      },
+      {
+        url: `${SITE_URL}/tools/discord-pfp-viewer`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.85,
+      },
+      {
+        url: `${SITE_URL}/tools/invite-checker`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/tools/permissions-calculator`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/tools/snowflake-timestamp`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/tools/markdown-color-text`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/tools/webhook-sender`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/tools/fancy-fonts`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      },
     ];
 
     // 2. Dynamic Server Pages
