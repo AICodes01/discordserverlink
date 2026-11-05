@@ -18,8 +18,12 @@ import {
   ExternalLink,
   MessageSquare,
   ChevronDown,
+  UploadCloud,
+  PlusCircle,
 } from "lucide-react";
 import { DISCORD_EMOJIS, EMOJI_CATEGORIES, DiscordEmoji } from "@/lib/emojisData";
+import EmojiSEOContent from "@/components/EmojiSEOContent";
+import EmojiSubmitForm from "@/components/EmojiSubmitForm";
 
 const CATEGORY_ICON_MAP: Record<string, any> = {
   all: Smile,
@@ -98,15 +102,25 @@ export default function EmojisPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
       {/* Hero Header */}
       <div className="relative rounded-3xl bg-gradient-to-r from-zinc-900 via-amber-950/30 to-zinc-900 border border-zinc-800 p-8 sm:p-12 overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold tracking-wide">
-            <Smile className="w-3.5 h-3.5" />
-            <span>1,000+ Discord Emojis Hosted on Server</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold tracking-wide">
+              <Smile className="w-3.5 h-3.5" />
+              <span>1,000+ Discord Emojis Hosted on Server</span>
+            </div>
+            <a
+              href="#submit-emoji"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+            >
+              <PlusCircle className="w-3.5 h-3.5 text-amber-400" />
+              <span>Submit Your Emoji</span>
+            </a>
           </div>
+
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
             Best <span className="text-amber-400">Discord Emojis</span> & Animated Icons
           </h1>
@@ -254,7 +268,7 @@ export default function EmojisPage() {
                     </p>
                     <button
                       onClick={() => handleCopyShortcode(emoji.shortcode, emoji.id)}
-                      className="font-mono text-[10px] text-zinc-400 hover:text-amber-400 bg-zinc-950/80 px-2 py-0.5 rounded border border-zinc-800/80 truncate block w-full transition-colors"
+                      className="font-mono text-[10px] text-zinc-400 hover:text-amber-400 bg-zinc-950/80 px-2 py-0.5 rounded border border-zinc-800/80 truncate block w-full transition-colors cursor-pointer"
                       title="Click to copy"
                     >
                       {isCopied ? "✓ Copied!" : emoji.shortcode}
@@ -265,7 +279,7 @@ export default function EmojisPage() {
                   <div className="w-full flex items-center gap-1.5 mt-3 pt-2 border-t border-zinc-800/60">
                     <button
                       onClick={() => handleCopyShortcode(emoji.shortcode, emoji.id)}
-                      className="flex-1 inline-flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[10px] font-semibold text-zinc-200 transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[10px] font-semibold text-zinc-200 transition-colors cursor-pointer"
                       title="Copy shortcode"
                     >
                       {isCopied ? (
@@ -278,7 +292,7 @@ export default function EmojisPage() {
 
                     <button
                       onClick={() => handleDownload(emoji)}
-                      className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors"
+                      className="p-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer"
                       title="Download emoji image file"
                     >
                       <Download className="w-3 h-3" />
@@ -322,46 +336,18 @@ export default function EmojisPage() {
               setSelectedCategory("all");
               setTypeFilter("all");
             }}
-            className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-colors"
+            className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-colors cursor-pointer"
           >
             Reset Filters
           </button>
         </div>
       )}
 
-      {/* Guide: How to Add Custom Emojis to Discord */}
-      <div className="bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4 shadow-xl">
-        <h3 className="text-base font-bold text-white flex items-center gap-2">
-          <HelpCircle className="w-4 h-4 text-amber-400" />
-          <span>How to Add Custom Emojis to Your Discord Server</span>
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs text-zinc-300">
-          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
-            <span className="font-bold text-amber-400">Step 1: Download</span>
-            <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Find the emoji you love above and click the download button to save the PNG or animated GIF directly from our server.
-            </p>
-          </div>
-          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
-            <span className="font-bold text-amber-400">Step 2: Server Settings</span>
-            <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Open Discord on desktop or mobile, click your Server Name, and select <strong>Server Settings</strong>.
-            </p>
-          </div>
-          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
-            <span className="font-bold text-amber-400">Step 3: Upload Emoji</span>
-            <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Navigate to the <strong>Emoji</strong> tab in the sidebar and click the purple <strong>Upload Emoji</strong> button.
-            </p>
-          </div>
-          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
-            <span className="font-bold text-amber-400">Step 4: Use & Enjoy</span>
-            <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Your server members can now type <code>:emoji_name:</code> to react and chat with the new custom emoji!
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Community Emoji Submission Form */}
+      <EmojiSubmitForm />
+
+      {/* Comprehensive Editorial & SEO Guide */}
+      <EmojiSEOContent onKeywordClick={(kw) => setSearchQuery(kw)} />
     </div>
   );
 }
