@@ -127,16 +127,16 @@ export default async function CategoriesPage() {
 
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-zinc-800/90 text-xs font-bold text-discord-blurple mb-3">
           <Layers className="w-3.5 h-3.5" />
-          <span>Category Directory Hub</span>
+          <span>Server Categories Directory</span>
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-          Explore Discord Categories
+          Discord Server Categories
         </h1>
         <p className="mt-3 text-sm sm:text-base text-zinc-300 max-w-2xl leading-relaxed">
-          Discover tailored communities across every genre, game, and interest on{" "}
-          <span className="text-zinc-100 font-semibold">discordserverlink.com</span>. Over{" "}
-          <span className="text-white font-bold">{totalServers.toLocaleString()}+</span> active Discord servers listed.
+          Select any Discord server category below to view all verified communities, find active voice chats, and join instantly. Over{" "}
+          <span className="text-white font-bold">{totalServers.toLocaleString()}+</span> active Discord servers listed across{" "}
+          <span className="text-white font-bold">{categories.length}</span> categories.
         </p>
       </div>
 
@@ -203,16 +203,17 @@ export default async function CategoriesPage() {
           const serverCount = countMap[cat.slug] || 0;
 
           return (
-            <div
-              key={cat.id}
-              className="group p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800/80 hover:border-discord-blurple/60 hover:bg-zinc-800/40 transition-all flex flex-col justify-between shadow-lg"
+            <Link
+              key={cat.id || cat.slug}
+              href={`/servers?category=${cat.slug}`}
+              className="group p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800/80 hover:border-discord-blurple hover:bg-zinc-800/50 hover:shadow-glow-sm transition-all duration-200 flex flex-col justify-between cursor-pointer"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 rounded-2xl bg-zinc-800 group-hover:bg-discord-blurple text-zinc-300 group-hover:text-white flex items-center justify-center transition-colors">
                     <Icon className="w-6 h-6" />
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-950 border border-zinc-800 text-indigo-300 group-hover:border-discord-blurple/40">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-950 border border-zinc-800 text-indigo-300 group-hover:border-discord-blurple/50 group-hover:bg-discord-blurple/10 group-hover:text-white transition-all">
                     {serverCount.toLocaleString()} {serverCount === 1 ? "Server" : "Servers"}
                   </span>
                 </div>
@@ -220,27 +221,16 @@ export default async function CategoriesPage() {
                 <h2 className="text-xl font-bold text-white group-hover:text-discord-blurple transition">
                   {cat.name}
                 </h2>
-                <p className="mt-2 text-xs sm:text-sm text-zinc-400 leading-relaxed">
+                <p className="mt-2 text-xs sm:text-sm text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition">
                   {cat.description}
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800/60 flex items-center justify-between gap-2">
-                <Link
-                  href={`/servers?category=${cat.slug}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-discord-blurple/10 hover:bg-discord-blurple text-discord-blurple hover:text-white text-xs font-bold transition-all border border-discord-blurple/20"
-                >
-                  <span>Show {serverCount.toLocaleString()} Servers</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-                <Link
-                  href={`/category/${cat.slug}`}
-                  className="text-xs font-semibold text-zinc-400 hover:text-white hover:underline transition"
-                >
-                  Guide & FAQ &rarr;
-                </Link>
+              <div className="mt-6 pt-4 border-t border-zinc-800/60 flex items-center justify-between text-xs font-bold text-discord-blurple group-hover:text-white transition">
+                <span>View All {serverCount.toLocaleString()} {cat.name} Servers</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
