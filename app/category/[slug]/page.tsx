@@ -107,12 +107,11 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
   const pageSuffix = page > 1 ? ` - Page ${page}` : "";
 
   const customData = CATEGORY_DATA[params.slug];
-  const title =
-    (category.seoTitle || customData?.headline || `${category.name} Discord Servers - Top Communities 2026`) + pageSuffix;
+  const title = (customData?.headline || `Latest ${category.name} Discord Server Join Links 2026`) + pageSuffix;
   const description =
-    category.seoDescription ||
     customData?.subheadline ||
-    `Browse the best active ${category.name} Discord servers. Connect with members, find teammates, and join live voice channels on discordserverlink.com.`;
+    category.seoDescription ||
+    `Browse the latest ${category.name} Discord server join links in 2026. Connect with members, find teammates, and join live voice channels on discordserverlink.com.`;
 
   const canonical =
     page > 1
@@ -228,8 +227,15 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
 
   // Load category-specific custom content
   const content: CategoryDetails = CATEGORY_DATA[category.slug] || {
-    headline: `Top ${category.name} Discord Servers 2026`,
-    subheadline: category.description,
+    headline: `Latest ${category.name} Discord Server Join Links 2026`,
+    subheadline: `Are you searching for active ${category.name} Discord servers to connect with members and join live voice channels? If so, you have come to the right place. Discover verified ${category.name} Discord server join links below.`,
+    keywords: [
+      `${category.name.toLowerCase()} discord servers`,
+      `best ${category.name.toLowerCase()} discord servers 2026`,
+      `${category.name.toLowerCase()} discord join links`,
+      `active ${category.name.toLowerCase()} discord`,
+      `join ${category.name.toLowerCase()} discord community`
+    ],
     serverTypesTitle: `Types of ${category.name} Discord Servers Explained`,
     serverTypesDescription: `Explore different styles of ${category.name} communities to find the perfect fit:`,
     serverTypes: [
@@ -391,19 +397,63 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
           {content.subheadline}
         </p>
 
-        <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold text-zinc-400 pt-4 border-t border-zinc-800/80">
-          <span className="flex items-center gap-1.5 text-discord-green bg-zinc-950/80 px-3 py-1.5 rounded-xl border border-zinc-800">
-            <span className="w-2 h-2 rounded-full bg-discord-green animate-pulse" />
-            {totalCount.toLocaleString()} Verified Communities
-          </span>
-          <span className="flex items-center gap-1.5 text-zinc-300 bg-zinc-950/80 px-3 py-1.5 rounded-xl border border-zinc-800">
-            <TrendingUp className="w-3.5 h-3.5 text-discord-yellow" />
-            Live Bumps Updated Continuously
-          </span>
-          <span className="flex items-center gap-1.5 text-zinc-300 bg-zinc-950/80 px-3 py-1.5 rounded-xl border border-zinc-800">
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-            100% Free Public Invites
-          </span>
+        {/* Quick Specifications Table */}
+        <div className="mt-8 overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950/70">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead>
+              <tr className="border-b border-zinc-800 bg-zinc-900/60 text-zinc-400">
+                <th className="py-2.5 px-4 font-semibold">{category.name} Discord Servers</th>
+                <th className="py-2.5 px-4 font-semibold text-right">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
+              <tr>
+                <td className="py-2 px-4 text-zinc-400">Total Listed Servers</td>
+                <td className="py-2 px-4 text-right font-bold text-white">{totalCount.toLocaleString()}+ Verified Communities</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 text-zinc-400">Invite Link Type</td>
+                <td className="py-2 px-4 text-right font-medium text-indigo-300">Direct Public Discord Join Links</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 text-zinc-400">Listing &amp; Join Cost</td>
+                <td className="py-2 px-4 text-right font-bold text-emerald-400">100% FREE</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 text-zinc-400">Ranking Criteria</td>
+                <td className="py-2 px-4 text-right text-zinc-200">Live Bump Velocity &amp; Active Members</td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 text-zinc-400">Platform</td>
+                <td className="py-2 px-4 text-right font-medium text-white">
+                  <a href="https://discord.com/" target="_blank" rel="noopener noreferrer" className="text-discord-blurple hover:underline">
+                    Discord.com
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 px-4 text-zinc-400">Directory Updates</td>
+                <td className="py-2 px-4 text-right font-semibold text-amber-300">Regular &amp; Real-Time (2026)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Cross-Directory Internal Links */}
+        <div className="mt-6 pt-4 border-t border-zinc-800/80 flex flex-wrap items-center gap-2 text-xs font-semibold">
+          <span className="text-zinc-500">Also Explore:</span>
+          <Link href="/discord-servers" className="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition">
+            Discord Servers
+          </Link>
+          <Link href="/bots" className="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition">
+            Discord Bots
+          </Link>
+          <Link href="/emojis" className="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition">
+            Discord Emojis
+          </Link>
+          <Link href="/categories" className="px-3 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition">
+            All Server Categories
+          </Link>
         </div>
       </div>
 
@@ -649,6 +699,33 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
           ))}
         </div>
       </section>
+
+      {/* SEO Keywords & Topics Section */}
+      {content.keywords && content.keywords.length > 0 && (
+        <section className="p-6 sm:p-8 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-discord-blurple uppercase tracking-wider">
+            <Sparkles className="w-4 h-4" />
+            <span>Search Keywords &amp; Relevance</span>
+          </div>
+
+          <p className="text-xs text-zinc-300 font-mono leading-relaxed bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
+            <span className="text-zinc-500 font-sans font-semibold">Keywords: </span>
+            {content.keywords.join(", ")}
+          </p>
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            {content.keywords.map((kw, i) => (
+              <Link
+                key={i}
+                href={`/servers?q=${encodeURIComponent(kw)}`}
+                className="px-3 py-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-medium transition"
+              >
+                #{kw}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Category FAQs with Schema.org Integration */}
       <FAQAccordion

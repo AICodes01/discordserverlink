@@ -182,7 +182,7 @@ export default async function CategoriesPage() {
             return (
               <Link
                 key={cat.id || cat.slug}
-                href={`/servers?category=${cat.slug}`}
+                href={`/category/${cat.slug}`}
                 className="group flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border shrink-0 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800 hover:border-discord-blurple/50"
               >
                 <Icon className="w-4 h-4 text-discord-blurple" />
@@ -205,7 +205,7 @@ export default async function CategoriesPage() {
           return (
             <Link
               key={cat.id || cat.slug}
-              href={`/servers?category=${cat.slug}`}
+              href={`/category/${cat.slug}`}
               className="group p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800/80 hover:border-discord-blurple hover:bg-zinc-800/50 hover:shadow-glow-sm transition-all duration-200 flex flex-col justify-between cursor-pointer"
             >
               <div>

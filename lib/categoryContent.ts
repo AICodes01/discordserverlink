@@ -32,6 +32,7 @@ export interface CategoryFAQ {
 export interface CategoryDetails {
   headline: string;
   subheadline: string;
+  keywords: string[];
   serverTypesTitle: string;
   serverTypesDescription: string;
   serverTypes: CategoryServerType[];
@@ -47,8 +48,20 @@ export interface CategoryDetails {
 
 export const CATEGORY_DATA: Record<string, CategoryDetails> = {
   gaming: {
-    headline: "Top Gaming Discord Servers 2026",
-    subheadline: "Whether you need competitive ranked teammates, custom Minecraft SMPs, or chill late-night party game voice lobbies, find verified gaming communities below.",
+    headline: "Latest Gaming Discord Server Join Links 2026",
+    subheadline: "Are you searching for the Best Gaming Discord Servers to find teammates, join active voice chats, and discover new communities? If so, you have come to the right place. Browse verified gaming Discord server join links for Minecraft, Valorant, Roblox, CS2, Fortnite, and casual co-op games.",
+    keywords: [
+      "gaming discord server",
+      "best gaming discord servers 2026",
+      "discord gaming join links",
+      "minecraft discord servers",
+      "valorant discord server",
+      "roblox discord servers",
+      "cs2 lfg discord",
+      "fortnite discord servers",
+      "active gaming discord communities",
+      "discord voice chat gaming"
+    ],
     serverTypesTitle: "Types of Gaming Discord Servers Explained",
     serverTypesDescription: "Gaming servers vary dramatically by intensity and game genre. Here are the 4 primary types:",
     serverTypes: [
@@ -167,8 +180,20 @@ export const CATEGORY_DATA: Record<string, CategoryDetails> = {
   },
 
   anime: {
-    headline: "Top Anime & Manga Discord Servers 2026",
-    subheadline: "Connect with passionate anime fans, manga readers, Japanese pop culture lovers, cosplayers, and digital fan artists in active Discord hubs.",
+    headline: "Latest Anime & Manga Discord Server Join Links 2026",
+    subheadline: "Are you looking for the Best Anime & Manga Discord Servers to discuss weekly episodes, share cosplay, and join watch parties? If so, you have come to the right place. Discover verified Discord communities for Jujutsu Kaisen, One Piece, Genshin, Demon Slayer, and Japanese pop culture.",
+    keywords: [
+      "anime discord servers",
+      "best anime discord servers 2026",
+      "manga discord servers",
+      "anime join links discord",
+      "anime watch party discord",
+      "jujutsu kaisen discord",
+      "one piece discord server",
+      "genshin discord servers",
+      "cosplay discord communities",
+      "japanese anime discord"
+    ],
     serverTypesTitle: "Types of Anime Discord Servers Explained",
     serverTypesDescription: "From weekly episode watch parties to bot card trading, anime servers feature rich micro-communities:",
     serverTypes: [
@@ -287,8 +312,20 @@ export const CATEGORY_DATA: Record<string, CategoryDetails> = {
   },
 
   technology: {
-    headline: "Top Technology, Coding & AI Discord Servers 2026",
-    subheadline: "Collaborate with senior software engineers, web developers, AI researchers, cybersecurity specialists, and DevOps architects across worldwide tech hubs.",
+    headline: "Latest Technology & Coding Discord Server Join Links 2026",
+    subheadline: "Are you searching for active Programming, AI, and Software Engineering Discord Servers? If so, you have come to the right place. Find developer communities for Python, JavaScript, Rust, Web3, DevOps, and LLMs with free code review and collaboration.",
+    keywords: [
+      "technology discord servers",
+      "coding discord servers 2026",
+      "programming discord join links",
+      "python discord server",
+      "javascript discord",
+      "ai discord servers",
+      "web development discord",
+      "software engineering community",
+      "rust discord server",
+      "devops discord"
+    ],
     serverTypesTitle: "Types of Tech & Programming Discord Servers",
     serverTypesDescription: "Whether you need code review assistance or want to talk LLMs, here are the core technical communities:",
     serverTypes: [
@@ -407,8 +444,20 @@ export const CATEGORY_DATA: Record<string, CategoryDetails> = {
   },
 
   community: {
-    headline: "Top Hangout, Chill & Social Discord Servers 2026",
-    subheadline: "Welcoming virtual lounges to meet new friends worldwide, unwind in cozy voice channels, share daily memes, and chat about everyday life.",
+    headline: "Latest Community & Social Discord Server Join Links 2026",
+    subheadline: "Are you searching for friendly, active Discord servers to chat, make friends, and chill in 24/7 voice lounges? If so, you have come to the right place. Explore welcoming community servers with movie nights, gaming sessions, and verified friendly moderation.",
+    keywords: [
+      "community discord servers",
+      "social discord servers 2026",
+      "chill discord join links",
+      "make friends discord",
+      "active voice chat discord",
+      "talk and chill discord",
+      "friendly discord servers",
+      "discord hangout groups",
+      "international discord community",
+      "discord meeting new people"
+    ],
     serverTypesTitle: "Types of Community & Social Discord Servers",
     serverTypesDescription: "From quiet late-night coffee lounges to active international hangouts, explore the varieties:",
     serverTypes: [
@@ -527,8 +576,20 @@ export const CATEGORY_DATA: Record<string, CategoryDetails> = {
   },
 
   music: {
-    headline: "Top Music Production & Audio Discord Servers 2026",
-    subheadline: "Connect with beatmakers, audio engineers, vocalists, songwriters, and passionate music fans across collaborative audio communities.",
+    headline: "Latest Music & Audio Discord Server Join Links 2026",
+    subheadline: "Are you looking for the Best Music Production, Beatmaking, and Listening Discord Servers? If so, you have come to the right place. Connect with music producers, vocalists, audio engineers, and fellow music lovers across all genres.",
+    keywords: [
+      "music discord servers",
+      "music production discord 2026",
+      "beatmaker discord server",
+      "discord music join links",
+      "lofi discord server",
+      "audio engineering discord",
+      "musicians community discord",
+      "fl studio discord server",
+      "ableton discord",
+      "singers and songwriters discord"
+    ],
     serverTypesTitle: "Types of Music Discord Servers Explained",
     serverTypesDescription: "Explore communities tailored to every stage of music creation and appreciation:",
     serverTypes: [
@@ -647,8 +708,20 @@ export const CATEGORY_DATA: Record<string, CategoryDetails> = {
   },
 
   education: {
-    headline: "Top Education, Study & Science Discord Servers 2026",
-    subheadline: "Join 24/7 virtual study rooms, get academic homework assistance, practice languages with native speakers, and collaborate on STEM research.",
+    headline: "Latest Education & Study Discord Server Join Links 2026",
+    subheadline: "Are you looking for 24/7 Study Together rooms, Pomodoro timer lounges, and academic Discord servers to boost your productivity? If so, you have come to the right place. Join verified study squads, homework help circles, and language learning hubs.",
+    keywords: [
+      "education discord servers",
+      "study discord servers 2026",
+      "study together discord join links",
+      "pomodoro discord server",
+      "homework help discord",
+      "college student discord",
+      "productivity discord",
+      "language exchange discord",
+      "stem discord community",
+      "math and physics discord"
+    ],
     serverTypesTitle: "Types of Education Discord Servers Explained",
     serverTypesDescription: "From quiet silent study rooms to collaborative academic hubs:",
     serverTypes: [
@@ -767,8 +840,20 @@ export const CATEGORY_DATA: Record<string, CategoryDetails> = {
   },
 
   finance: {
-    headline: "Top Crypto, Stocks & Finance Discord Servers 2026",
-    subheadline: "Explore active market communities for daily stock watchlists, cryptocurrency technical analysis, options strategies, and personal finance discussions.",
+    headline: "Latest Crypto & Finance Discord Server Join Links 2026",
+    subheadline: "Are you searching for top Cryptocurrency, Stock Market, and Personal Finance Discord Servers? If so, you have come to the right place. Discover active communities discussing market analysis, trading strategies, macroeconomics, and financial education.",
+    keywords: [
+      "finance discord servers",
+      "crypto discord servers 2026",
+      "stock trading discord join links",
+      "bitcoin discord server",
+      "investing discord",
+      "personal finance discord",
+      "forex discord community",
+      "options trading discord",
+      "ethereum alpha discord",
+      "financial education discord"
+    ],
     serverTypesTitle: "Types of Financial & Trading Discord Servers",
     serverTypesDescription: "Understand the focus of different financial communities before trading:",
     serverTypes: [
@@ -887,8 +972,20 @@ export const CATEGORY_DATA: Record<string, CategoryDetails> = {
   },
 
   art: {
-    headline: "Top Art, Design & Creative Discord Servers 2026",
-    subheadline: "Showcase digital illustrations, 3D modeling, UI/UX portfolios, animation reels, and receive constructive critiques from fellow artists worldwide.",
+    headline: "Latest Art & Design Discord Server Join Links 2026",
+    subheadline: "Are you searching for creative Digital Art, 3D Modeling, and Design Discord Servers? If so, you have come to the right place. Share your illustrations, receive constructive feedback, participate in art challenges, and collaborate with creators.",
+    keywords: [
+      "art discord servers",
+      "design discord servers 2026",
+      "digital art discord join links",
+      "blender 3d discord",
+      "drawing discord server",
+      "graphic design discord",
+      "artist community discord",
+      "procreate discord server",
+      "concept art discord",
+      "ui ux discord community"
+    ],
     serverTypesTitle: "Types of Art & Creative Discord Servers",
     serverTypesDescription: "Find the creative hub that matches your medium and artistic aspirations:",
     serverTypes: [
