@@ -2,7 +2,21 @@ import prisma from "@/lib/prisma";
 import ServerCard from "@/components/ServerCard";
 import Pagination from "@/components/Pagination";
 import Link from "next/link";
-import { Search, Filter, Layers, Sparkles } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Layers,
+  Sparkles,
+  Gamepad2,
+  Flame,
+  Code2,
+  Users,
+  Headphones,
+  GraduationCap,
+  TrendingUp,
+  Palette,
+  Compass,
+} from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -12,6 +26,17 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 60;
+
+const categoryIcons: Record<string, any> = {
+  gaming: Gamepad2,
+  anime: Flame,
+  technology: Code2,
+  community: Users,
+  music: Headphones,
+  education: GraduationCap,
+  finance: TrendingUp,
+  art: Palette,
+};
 
 interface ServersPageProps {
   searchParams: {
@@ -63,10 +88,12 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
 
   let servers: any[] = [];
   let totalCount = 0;
+  let allServersCount = 5306;
   let categories: any[] = [];
+  let countMap: Record<string, number> = {};
 
   try {
-    const [dbServers, dbTotal, dbCats] = await Promise.all([
+    const [dbServers, dbTotal, dbAllCount, dbCats, catCounts] = await Promise.all([
       prisma.server.findMany({
         where,
         orderBy,
@@ -74,22 +101,54 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
         take: limit,
       }),
       prisma.server.count({ where }),
+      prisma.server.count({ where: { status: "APPROVED" } }),
       prisma.category.findMany({
         orderBy: { displayOrder: "asc" },
-        select: { name: true, slug: true },
+      }),
+      prisma.server.groupBy({
+        by: ["categorySlug"],
+        where: { status: "APPROVED" },
+        _count: { id: true },
       }),
     ]);
+
     servers = dbServers;
     totalCount = dbTotal;
+    allServersCount = dbAllCount || 5306;
     categories = dbCats;
+    countMap = catCounts.reduce((acc: any, curr: any) => {
+      acc[curr.categorySlug] = curr._count.id;
+      return acc;
+    }, {});
+
+    if (categories.length === 0 || servers.length === 0 || allServersCount === 0) {
+      throw new Error("No data in DB, use seed fallback");
+    }
   } catch {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const seed = require("@/prisma/seed-data.json");
       categories = seed.categories || [];
-      let list = seed.servers || [];
+      const seedServers: any[] = seed.servers || [];
+      allServersCount = seedServers.length;
+
+      // Populate countMap from seed data
+      seedServers.forEach((s: any) => {
+        if (s.categorySlug) {
+          countMap[s.categorySlug] = (countMap[s.categorySlug] || 0) + 1;
+        }
+      });
+
+      let list = seedServers;
       if (category) {
-        list = list.filter((s: any) => s.categorySlug === category);
+        list = list.filter(
+          (s: any) => s.categorySlug?.toLowerCase() === category.toLowerCase()
+        );
+      }
+      if (tag) {
+        list = list.filter((s: any) =>
+          s.tags?.toLowerCase().includes(tag.toLowerCase())
+        );
       }
       if (query) {
         const q = query.toLowerCase();
@@ -100,6 +159,28 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
             s.tags?.toLowerCase().includes(q)
         );
       }
+
+      // In-memory sort
+      if (sort === "members") {
+        list = [...list].sort(
+          (a: any, b: any) => (b.memberCount || 0) - (a.memberCount || 0)
+        );
+      } else if (sort === "newest") {
+        list = [...list].sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt || 0).getTime() -
+            new Date(a.createdAt || 0).getTime()
+        );
+      } else if (sort === "popular") {
+        list = [...list].sort(
+          (a: any, b: any) => (b.joinsCount || 0) - (a.joinsCount || 0)
+        );
+      } else if (sort === "bumps") {
+        list = [...list].sort(
+          (a: any, b: any) => (b.bumpsCount || 0) - (a.bumpsCount || 0)
+        );
+      }
+
       totalCount = list.length;
       servers = list.slice(skip, skip + limit);
     } catch {}
@@ -107,16 +188,43 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
 
   const totalPages = Math.ceil(totalCount / limit);
 
+  // Helper to build category filter URLs while preserving search query and sort
+  const buildCategoryUrl = (catSlug?: string) => {
+    const params = new URLSearchParams();
+    if (catSlug) params.set("category", catSlug);
+    if (query) params.set("q", query);
+    if (tag) params.set("tag", tag);
+    if (sort && sort !== "bumped") params.set("sort", sort);
+    const qs = params.toString();
+    return `/servers${qs ? `?${qs}` : ""}`;
+  };
+
+  const activeCategoryObj = categories.find(
+    (c) => c.slug.toLowerCase() === category.toLowerCase()
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       {/* Page Title & Search Bar */}
       <div>
-        <h1 className="text-3xl sm:text-4xl font-black text-white">
-          Explore Discord Servers
-        </h1>
-        <p className="text-sm text-zinc-400 mt-1">
-          Browse {totalCount.toLocaleString()} community servers listed on discordserverlink.com
-        </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              {activeCategoryObj
+                ? `${activeCategoryObj.name} Discord Servers`
+                : "Explore Discord Servers"}
+            </h1>
+            <p className="text-sm text-zinc-400 mt-1">
+              Browse {totalCount.toLocaleString()} {activeCategoryObj ? activeCategoryObj.name : "community"} servers listed on discordserverlink.com
+            </p>
+          </div>
+          <Link
+            href="/categories"
+            className="text-xs font-semibold text-discord-blurple hover:underline inline-flex items-center gap-1 self-start md:self-auto"
+          >
+            <span>View All Categories Hub &rarr;</span>
+          </Link>
+        </div>
 
         {/* Filter & Search Bar */}
         <div className="mt-6 p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 space-y-4">
@@ -140,10 +248,10 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
                 defaultValue={category}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-discord-blurple"
               >
-                <option value="">All Categories</option>
+                <option value="">All Categories ({allServersCount.toLocaleString()})</option>
                 {categories.map((c) => (
                   <option key={c.slug} value={c.slug}>
-                    {c.name}
+                    {c.name} ({countMap[c.slug]?.toLocaleString() || 0})
                   </option>
                 ))}
               </select>
@@ -176,7 +284,7 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
 
           {/* Active filter badges */}
           {(query || category || tag) && (
-            <div className="flex items-center gap-2 pt-2 border-t border-zinc-800/60 text-xs">
+            <div className="flex items-center gap-2 pt-2 border-t border-zinc-800/60 text-xs flex-wrap">
               <span className="text-zinc-500">Active filters:</span>
               {query && (
                 <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300">
@@ -185,7 +293,7 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
               )}
               {category && (
                 <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 capitalize">
-                  Category: {category}
+                  Category: {activeCategoryObj?.name || category}
                 </span>
               )}
               {tag && (
@@ -194,10 +302,89 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
                 </span>
               )}
               <Link href="/servers" className="text-discord-blurple hover:underline ml-2">
-                Clear all
+                Clear all filters
               </Link>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Category Tabs Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-discord-blurple" />
+            <h2 className="text-base sm:text-lg font-bold text-white">
+              Browse by Category
+            </h2>
+            <span className="text-xs font-normal text-zinc-500">
+              ({categories.length} categories)
+            </span>
+          </div>
+          {category && (
+            <Link
+              href={buildCategoryUrl()}
+              className="text-xs font-semibold text-discord-blurple hover:underline flex items-center gap-1"
+            >
+              <span>Show All Servers &rarr;</span>
+            </Link>
+          )}
+        </div>
+
+        {/* Horizontal Category Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {/* All Servers Tab */}
+          <Link
+            href={buildCategoryUrl()}
+            className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border shrink-0 ${
+              !category
+                ? "bg-discord-blurple text-white border-discord-blurple shadow-glow-sm"
+                : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800"
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>All Servers</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                !category
+                  ? "bg-white/20 text-white"
+                  : "bg-zinc-800 text-zinc-400 group-hover:text-zinc-200"
+              }`}
+            >
+              {allServersCount.toLocaleString()}
+            </span>
+          </Link>
+
+          {/* Each Category Tab */}
+          {categories.map((cat) => {
+            const Icon = categoryIcons[cat.slug] || Compass;
+            const isActive = category.toLowerCase() === cat.slug.toLowerCase();
+            const count = countMap[cat.slug] || 0;
+
+            return (
+              <Link
+                key={cat.slug}
+                href={buildCategoryUrl(cat.slug)}
+                className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border shrink-0 ${
+                  isActive
+                    ? "bg-discord-blurple text-white border-discord-blurple shadow-glow-sm"
+                    : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{cat.name}</span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-zinc-800 text-zinc-400 group-hover:text-zinc-200"
+                  }`}
+                >
+                  {count.toLocaleString()}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

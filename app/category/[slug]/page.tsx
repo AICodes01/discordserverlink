@@ -38,6 +38,7 @@ import {
   Box,
   Layout,
   Mic,
+  Layers,
 } from "lucide-react";
 
 export const revalidate = 60;
@@ -137,15 +138,37 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
   let category: any = null;
   let servers: any[] = [];
   let totalCount = 0;
+  let allCategories: any[] = [];
+  let countMap: Record<string, number> = {};
+  let globalTotal = 5306;
 
   const page = Math.max(1, parseInt(searchParams?.page || "1", 10));
   const limit = 24;
   const skip = (page - 1) * limit;
 
   try {
-    category = await prisma.category.findUnique({
-      where: { slug: params.slug },
-    });
+    const [dbCat, dbCats, catCounts, dbGlobalTotal] = await Promise.all([
+      prisma.category.findUnique({
+        where: { slug: params.slug },
+      }),
+      prisma.category.findMany({
+        orderBy: { displayOrder: "asc" },
+      }),
+      prisma.server.groupBy({
+        by: ["categorySlug"],
+        where: { status: "APPROVED" },
+        _count: { id: true },
+      }),
+      prisma.server.count({ where: { status: "APPROVED" } }),
+    ]);
+
+    category = dbCat;
+    allCategories = dbCats;
+    globalTotal = dbGlobalTotal || 5306;
+    countMap = catCounts.reduce((acc: any, curr: any) => {
+      acc[curr.categorySlug] = curr._count.id;
+      return acc;
+    }, {});
 
     if (category) {
       const [dbServers, dbTotal] = await Promise.all([
@@ -167,14 +190,30 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
       ]);
       servers = dbServers;
       totalCount = dbTotal;
+      if (totalCount === 0 || servers.length === 0) {
+        throw new Error("Category has 0 servers in DB, using seed fallback");
+      }
     }
   } catch {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const seed = require("@/prisma/seed-data.json");
-      category = (seed.categories || []).find((c: any) => c.slug === params.slug) || null;
+      allCategories = seed.categories || [];
+      category = (allCategories || []).find((c: any) => c.slug === params.slug) || null;
+      const seedServers: any[] = seed.servers || [];
+      globalTotal = seedServers.length;
+
+      countMap = {};
+      seedServers.forEach((s: any) => {
+        if (s.categorySlug) {
+          countMap[s.categorySlug] = (countMap[s.categorySlug] || 0) + 1;
+        }
+      });
+
       if (category) {
-        const catServers = (seed.servers || []).filter((s: any) => s.categorySlug === category.slug);
+        const catServers = seedServers.filter(
+          (s: any) => s.categorySlug?.toLowerCase() === category.slug.toLowerCase()
+        );
         totalCount = catServers.length;
         servers = catServers.slice(skip, skip + limit);
       }
@@ -365,6 +404,71 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
             <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
             100% Free Public Invites
           </span>
+        </div>
+      </div>
+
+      {/* Category Tabs Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-discord-blurple" />
+            <h2 className="text-base sm:text-lg font-bold text-white">
+              Browse Other Categories
+            </h2>
+            <span className="text-xs font-normal text-zinc-500">
+              ({allCategories.length} categories)
+            </span>
+          </div>
+          <Link
+            href="/servers"
+            className="text-xs font-semibold text-discord-blurple hover:underline flex items-center gap-1"
+          >
+            <span>Show All Servers &rarr;</span>
+          </Link>
+        </div>
+
+        {/* Horizontal Category Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {/* All Servers Tab */}
+          <Link
+            href="/servers"
+            className="group flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border shrink-0 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800 hover:border-discord-blurple/50"
+          >
+            <Layers className="w-4 h-4 text-discord-blurple" />
+            <span>All Servers</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-zinc-800 text-zinc-400 group-hover:text-zinc-200">
+              {globalTotal.toLocaleString()}
+            </span>
+          </Link>
+
+          {/* Each Category Tab */}
+          {allCategories.map((cat) => {
+            const isActive = cat.slug.toLowerCase() === category.slug.toLowerCase();
+            const count = countMap[cat.slug] || 0;
+
+            return (
+              <Link
+                key={cat.id || cat.slug}
+                href={`/category/${cat.slug}`}
+                className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border shrink-0 ${
+                  isActive
+                    ? "bg-discord-blurple text-white border-discord-blurple shadow-glow-sm"
+                    : "bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800"
+                }`}
+              >
+                <span>{cat.name}</span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-zinc-800 text-zinc-400 group-hover:text-zinc-200"
+                  }`}
+                >
+                  {count.toLocaleString()}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

@@ -79,11 +79,11 @@ export default function Navbar() {
           {/* Nav Items */}
           <nav className="hidden lg:flex items-center space-x-1">
             <NextLink
-              href="/categories"
+              href="/servers"
               className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors flex items-center space-x-1.5"
             >
               <Server className="w-4 h-4 text-discord-blurple" />
-              <span>Server</span>
+              <span>Servers</span>
             </NextLink>
             <NextLink
               href="/bots"
@@ -237,12 +237,12 @@ export default function Navbar() {
 
           <div className="flex flex-col space-y-1">
             <NextLink
-              href="/categories"
+              href="/servers"
               onClick={() => setMobileMenuOpen(false)}
               className="px-3 py-2 rounded-lg text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 transition flex items-center space-x-2"
             >
               <Server className="w-5 h-5 text-discord-blurple" />
-              <span>Server</span>
+              <span>Servers</span>
             </NextLink>
             <NextLink
               href="/bots"

@@ -59,6 +59,7 @@ export const revalidate = 60;
 export default async function CategoriesPage() {
   let categories: any[] = [];
   let countMap: Record<string, number> = {};
+  let totalServers = 5306;
 
   try {
     categories = await prisma.category.findMany({
@@ -76,12 +77,29 @@ export default async function CategoriesPage() {
       acc[curr.categorySlug] = curr._count.id;
       return acc;
     }, {} as Record<string, number>);
+
+    totalServers = await prisma.server.count({ where: { status: "APPROVED" } });
+
+    // Fallback if DB returned 0 categories or 0 counts
+    if (categories.length === 0 || Object.keys(countMap).length === 0) {
+      throw new Error("No data in DB, using seed fallback");
+    }
   } catch (error) {
     // Graceful fallback for local builds / offline database
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const seed = require("@/prisma/seed-data.json");
       categories = seed.categories || [];
+      const seedServers: any[] = seed.servers || [];
+      totalServers = seedServers.length;
+
+      // Populate countMap from seed data
+      countMap = {};
+      seedServers.forEach((s: any) => {
+        if (s.categorySlug) {
+          countMap[s.categorySlug] = (countMap[s.categorySlug] || 0) + 1;
+        }
+      });
     } catch {}
   }
 
@@ -93,7 +111,7 @@ export default async function CategoriesPage() {
   const faqSchema = generateFAQSchema(CATEGORIES_HUB_FAQS);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-14">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
@@ -117,8 +135,65 @@ export default async function CategoriesPage() {
         </h1>
         <p className="mt-3 text-sm sm:text-base text-zinc-300 max-w-2xl leading-relaxed">
           Discover tailored communities across every genre, game, and interest on{" "}
-          <span className="text-zinc-100 font-semibold">discordserverlink.com</span>.
+          <span className="text-zinc-100 font-semibold">discordserverlink.com</span>. Over{" "}
+          <span className="text-white font-bold">{totalServers.toLocaleString()}+</span> active Discord servers listed.
         </p>
+      </div>
+
+      {/* Category Tabs Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-discord-blurple" />
+            <h2 className="text-base sm:text-lg font-bold text-white">
+              Browse by Category
+            </h2>
+            <span className="text-xs font-normal text-zinc-500">
+              ({categories.length} categories • {totalServers.toLocaleString()} total servers)
+            </span>
+          </div>
+          <Link
+            href="/servers"
+            className="text-xs font-semibold text-discord-blurple hover:underline flex items-center gap-1"
+          >
+            <span>View All Servers &rarr;</span>
+          </Link>
+        </div>
+
+        {/* Horizontal Category Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {/* All Servers Tab */}
+          <Link
+            href="/servers"
+            className="group flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border shrink-0 bg-discord-blurple text-white border-discord-blurple shadow-glow-sm"
+          >
+            <Layers className="w-4 h-4" />
+            <span>All Servers</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/20 text-white">
+              {totalServers.toLocaleString()}
+            </span>
+          </Link>
+
+          {/* Individual Category Tabs */}
+          {categories.map((cat) => {
+            const Icon = categoryIcons[cat.slug] || Layers;
+            const count = countMap[cat.slug] || 0;
+
+            return (
+              <Link
+                key={cat.id || cat.slug}
+                href={`/servers?category=${cat.slug}`}
+                className="group flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border shrink-0 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800 hover:border-discord-blurple/50"
+              >
+                <Icon className="w-4 h-4 text-discord-blurple" />
+                <span>{cat.name}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-zinc-800 text-zinc-400 group-hover:text-zinc-200">
+                  {count.toLocaleString()}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {/* Category Grid */}
@@ -128,9 +203,8 @@ export default async function CategoriesPage() {
           const serverCount = countMap[cat.slug] || 0;
 
           return (
-            <Link
+            <div
               key={cat.id}
-              href={`/category/${cat.slug}`}
               className="group p-6 rounded-3xl bg-zinc-900/60 border border-zinc-800/80 hover:border-discord-blurple/60 hover:bg-zinc-800/40 transition-all flex flex-col justify-between shadow-lg"
             >
               <div>
@@ -138,8 +212,8 @@ export default async function CategoriesPage() {
                   <div className="w-12 h-12 rounded-2xl bg-zinc-800 group-hover:bg-discord-blurple text-zinc-300 group-hover:text-white flex items-center justify-center transition-colors">
                     <Icon className="w-6 h-6" />
                   </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-950 border border-zinc-800 text-zinc-400">
-                    {serverCount} {serverCount === 1 ? "Server" : "Servers"}
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-950 border border-zinc-800 text-indigo-300 group-hover:border-discord-blurple/40">
+                    {serverCount.toLocaleString()} {serverCount === 1 ? "Server" : "Servers"}
                   </span>
                 </div>
 
@@ -151,11 +225,22 @@ export default async function CategoriesPage() {
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800/60 flex items-center justify-between text-xs font-semibold text-discord-blurple">
-                <span>Explore {cat.name} Servers</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <div className="mt-6 pt-4 border-t border-zinc-800/60 flex items-center justify-between gap-2">
+                <Link
+                  href={`/servers?category=${cat.slug}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-discord-blurple/10 hover:bg-discord-blurple text-discord-blurple hover:text-white text-xs font-bold transition-all border border-discord-blurple/20"
+                >
+                  <span>Show {serverCount.toLocaleString()} Servers</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  href={`/category/${cat.slug}`}
+                  className="text-xs font-semibold text-zinc-400 hover:text-white hover:underline transition"
+                >
+                  Guide & FAQ &rarr;
+                </Link>
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>
