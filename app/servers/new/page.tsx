@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import FAQAccordion, { FAQItem } from "@/components/FAQAccordion";
 import { generateFAQSchema } from "@/lib/seo";
+import ServerSubmissionContent from "@/components/ServerSubmissionContent";
 
 const ADD_SERVER_FAQS: FAQItem[] = [
   {
@@ -248,19 +249,122 @@ export default function AddServerPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-discord-blurple/10 border border-discord-blurple/20 text-xs font-bold text-discord-blurple mb-2">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Free Discord Server Listing &amp; Growth Engine</span>
+      {/* ========================================================= */}
+      {/* SUBMIT YOUR SERVER HERO & INTRO */}
+      {/* ========================================================= */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-zinc-900 via-indigo-950/40 to-zinc-900 border border-zinc-800 p-6 sm:p-10 overflow-hidden shadow-2xl space-y-6">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-discord-blurple/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-discord-blurple/10 border border-discord-blurple/20 text-xs font-bold text-discord-blurple">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Submit Your Server • 100% Free Listing</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+            Submit Your Server
+          </h1>
+
+          <div className="space-y-3 text-zinc-300 text-sm sm:text-base leading-relaxed">
+            <p>
+              Submit Your Server: Adding your server to the Discord Directory is one of the best ways to grow your Discord community and connect with millions of passionate users. If you own a{" "}
+              <Link
+                href="https://discordserverlink.com/"
+                className="text-discord-blurple underline font-semibold hover:text-discord-hover"
+              >
+                Discord server
+              </Link>{" "}
+              and want to list it for free to reach thousands of active users who are looking for new communities, then you’ve come to the right place.
+            </p>
+            <p>
+              On our Discord Server Directory website,{" "}
+              <Link
+                href="https://discordserverlink.com/"
+                className="text-white font-bold underline decoration-discord-blurple underline-offset-4 hover:text-discord-blurple"
+              >
+                DiscordServerLink.com
+              </Link>
+              , you can submit your server link for free and showcase it to thousands of active Discord users every day. Scroll down to the Discord Sever Link form below to submit and list your server now.
+            </p>
+          </div>
+
+          <div className="pt-2 border-t border-zinc-800/80 space-y-2">
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              Submit Your Discord Server
+            </h2>
+            <p className="text-zinc-300 text-sm sm:text-base leading-relaxed">
+              DiscordServerLink.com allows all users to submit their server link to the website for free without registration. However, we also offer a paid plan. We have made the process very easy and simple. Just fill out a simple form with accurate details such as name, category, tags, and a short description.
+            </p>
+          </div>
+
+          {/* Specification Overview Table */}
+          <div className="pt-2">
+            <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950/70">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-zinc-900/90 text-xs uppercase font-bold text-zinc-400 border-b border-zinc-800">
+                  <tr>
+                    <th scope="col" className="px-5 py-3 text-white">
+                      Discord Server Link
+                    </th>
+                    <th scope="col" className="px-5 py-3 text-white">
+                      Submit
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/80 text-zinc-300">
+                  <tr className="hover:bg-zinc-900/40 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-white">Link Type</td>
+                    <td className="px-5 py-3 text-discord-blurple font-medium">
+                      Discord Server Join Link
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-zinc-900/40 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-white">Listing Cost</td>
+                    <td className="px-5 py-3">
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold text-xs border border-emerald-500/20">
+                        FREE
+                      </span>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-zinc-900/40 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-white">Link Approval</td>
+                    <td className="px-5 py-3 text-zinc-300">Required</td>
+                  </tr>
+                  <tr className="hover:bg-zinc-900/40 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-white">Contact us</td>
+                    <td className="px-5 py-3">
+                      <Link
+                        href="https://discordserverlink.com/contact-us/"
+                        className="text-discord-blurple underline font-semibold hover:text-discord-hover"
+                      >
+                        Here
+                      </Link>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-zinc-900/40 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-white">Platform</td>
+                    <td className="px-5 py-3">
+                      <a
+                        href="https://discord.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-discord-blurple underline font-semibold hover:text-discord-hover"
+                      >
+                        Discord
+                      </a>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-zinc-900/40 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-white">How to Promote</td>
+                    <td className="px-5 py-3 text-emerald-400 font-medium">
+                      Fill the Form
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-          List Your Discord Server
-        </h1>
-        <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">
-          Reach thousands of organic, active Discord users daily. Enter your invite link below to
-          automatically import your icons, banners, and member metrics in seconds.
-        </p>
       </div>
 
       {/* Main Submission Form */}
@@ -285,7 +389,7 @@ export default function AddServerPage() {
               type="button"
               onClick={handleFetchDiscord}
               disabled={fetchingDiscord}
-              className="py-3 px-6 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-sm font-bold transition flex items-center justify-center gap-2 shadow-glow-sm flex-shrink-0 disabled:opacity-50"
+              className="py-3 px-6 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-sm font-bold transition flex items-center justify-center gap-2 shadow-glow-sm flex-shrink-0 disabled:opacity-50 cursor-pointer"
             >
               {fetchingDiscord ? (
                 <>
@@ -439,7 +543,7 @@ export default function AddServerPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-discord-blurple to-indigo-600 hover:from-discord-hover hover:to-indigo-500 text-white font-bold text-base shadow-glow transition flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-discord-blurple to-indigo-600 hover:from-discord-hover hover:to-indigo-500 text-white font-bold text-base shadow-glow transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {submitting ? (
                 <>
@@ -456,6 +560,11 @@ export default function AddServerPage() {
           </div>
         </form>
       </div>
+
+      {/* ========================================================= */}
+      {/* RULES, BENEFITS, WHY DISCORDSERVERLINK, CONCLUSION & DISCLAIMER */}
+      {/* ========================================================= */}
+      <ServerSubmissionContent />
 
       {/* ShoutMeLoud-Style Growth Blueprint Editorial */}
       <section className="rounded-3xl bg-zinc-900/60 border border-zinc-800 p-8 sm:p-12 space-y-8">
