@@ -7,7 +7,7 @@ export default function Footer() {
   return (
     <footer className="border-t border-zinc-800/80 bg-zinc-950/80 text-zinc-400 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="flex items-center space-x-2.5">
@@ -114,7 +114,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Links & Legal */}
+          {/* Links & Tools */}
           <div>
             <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-wider mb-4">
               Platform & Tools
@@ -157,19 +157,67 @@ export default function Footer() {
               </li>
             </ul>
           </div>
+
+          {/* Company & Legal */}
+          <div>
+            <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-wider mb-4">
+              Company & Legal
+            </h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/about-us" className="hover:text-white transition">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact-us" className="hover:text-white transition">
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy-policy" className="hover:text-white transition">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-white transition">
+                  Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link href="/disclaimer" className="hover:text-white transition">
+                  Disclaimer
+                </Link>
+              </li>
+              <li>
+                <Link href="/dmca" className="hover:text-white transition">
+                  DMCA Policy
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 gap-4">
           <p>© {currentYear} discordserverlink.com. Not affiliated with or endorsed by Discord, Inc.</p>
-          <div className="flex items-center space-x-6">
-            <Link href="/" className="hover:text-zinc-400 transition">
-              Home
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link href="/about-us" className="hover:text-zinc-400 transition">
+              About
             </Link>
-            <Link href="/servers" className="hover:text-zinc-400 transition">
-              Servers
+            <Link href="/contact-us" className="hover:text-zinc-400 transition">
+              Contact
             </Link>
-            <Link href="/blog" className="hover:text-zinc-400 transition">
-              Blog
+            <Link href="/privacy-policy" className="hover:text-zinc-400 transition">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-zinc-400 transition">
+              Terms
+            </Link>
+            <Link href="/disclaimer" className="hover:text-zinc-400 transition">
+              Disclaimer
+            </Link>
+            <Link href="/dmca" className="hover:text-zinc-400 transition">
+              DMCA
             </Link>
             <Link href="/sitemap.xml" className="hover:text-zinc-400 transition">
               Sitemap

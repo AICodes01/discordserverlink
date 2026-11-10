@@ -7,6 +7,7 @@ import AnnouncementBanner from "@/components/AnnouncementBanner";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import HeaderAdBanner from "@/components/ads/HeaderAdBanner";
 import FooterAdBanner from "@/components/ads/FooterAdBanner";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 import prisma from "@/lib/prisma";
 import { generateWebSiteSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
 
@@ -121,6 +122,7 @@ export default async function RootLayout({
             enabled={settingsMap.ad_footer_enabled}
           />
           <Footer />
+          <CookieConsentBanner />
           {bodyEndCode && (
             <div
               style={{ display: "none" }}
