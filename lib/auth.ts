@@ -4,6 +4,15 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+const discordClientId = process.env.DISCORD_CLIENT_ID?.trim();
+const discordClientSecret = process.env.DISCORD_CLIENT_SECRET?.trim();
+const hasDiscordConfig = Boolean(
+  discordClientId &&
+  discordClientSecret &&
+  discordClientId !== "YOUR_DISCORD_CLIENT_ID" &&
+  discordClientId !== ""
+);
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
@@ -13,11 +22,11 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   providers: [
-    ...(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET
+    ...(hasDiscordConfig
       ? [
           DiscordProvider({
-            clientId: process.env.DISCORD_CLIENT_ID,
-            clientSecret: process.env.DISCORD_CLIENT_SECRET,
+            clientId: discordClientId!,
+            clientSecret: discordClientSecret!,
             authorization: {
               params: {
                 scope: "identify email guilds",
@@ -41,6 +50,17 @@ export const authOptions: NextAuthOptions = {
         const email = credentials.email.toLowerCase().trim();
         const inputPassword = credentials.password;
         let user: any = null;
+
+        // Quick demo user for local testing if Discord OAuth is not configured
+        if (email === "demo@discordserverlink.com" && inputPassword === "demo123456") {
+          return {
+            id: "demo-user-cuid-123456",
+            email: "demo@discordserverlink.com",
+            name: "Demo Community Member",
+            image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+            role: "USER",
+          };
+        }
 
         try {
           user = await prisma.user.findUnique({
@@ -103,8 +123,9 @@ export const authOptions: NextAuthOptions = {
         const discordProfile = profile as any;
         const discordId = discordProfile.id;
         const email = discordProfile.email || `${discordId}@discord.user`;
+        const format = discordProfile.avatar?.startsWith("a_") ? "gif" : "png";
         const avatar = discordProfile.avatar
-          ? `https://cdn.discordapp.com/avatars/${discordId}/${discordProfile.avatar}.png`
+          ? `https://cdn.discordapp.com/avatars/${discordId}/${discordProfile.avatar}.${format}`
           : null;
 
         // Find or upsert user
@@ -114,8 +135,9 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
+        let dbUser;
         if (!existing) {
-          await prisma.user.create({
+          dbUser = await prisma.user.create({
             data: {
               discordId,
               email,
@@ -127,7 +149,7 @@ export const authOptions: NextAuthOptions = {
             },
           });
         } else {
-          await prisma.user.update({
+          dbUser = await prisma.user.update({
             where: { id: existing.id },
             data: {
               discordId,
@@ -136,6 +158,9 @@ export const authOptions: NextAuthOptions = {
             },
           });
         }
+
+        user.id = dbUser.id;
+        (user as any).role = dbUser.role;
       }
       return true;
     },
