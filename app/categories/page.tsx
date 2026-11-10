@@ -3,6 +3,13 @@ import Link from "next/link";
 import FAQAccordion, { FAQItem } from "@/components/FAQAccordion";
 import {
   Gamepad2,
+  Laugh,
+  Mic,
+  Tv,
+  Dumbbell,
+  Bot,
+  Trophy,
+  Film,
   Flame,
   Code2,
   Users,
@@ -22,7 +29,7 @@ import { generateBreadcrumbSchema, generateFAQSchema, SITE_URL } from "@/lib/seo
 export const metadata: Metadata = {
   title: "All Discord Server Categories 2026 - DiscordServerLink",
   description:
-    "Browse Discord servers across Gaming, Anime, Technology, Music, Chill, Crypto, and Education on discordserverlink.com.",
+    "Browse Discord servers across Gaming, Anime, Technology, AI, Movies, eSports, Fitness, Memes, Podcasts, and more on discordserverlink.com.",
   alternates: {
     canonical: `${SITE_URL}/categories`,
   },
@@ -37,12 +44,19 @@ const categoryIcons: Record<string, any> = {
   education: GraduationCap,
   finance: TrendingUp,
   art: Palette,
+  "movies-entertainment": Film,
+  "esports-tournaments": Trophy,
+  "artificial-intelligence": Bot,
+  "sports-fitness": Dumbbell,
+  "movies-television": Tv,
+  "podcasts-talk": Mic,
+  "memes-humor": Laugh,
 };
 
 const CATEGORIES_HUB_FAQS: FAQItem[] = [
   {
     question: "How are categories organized on DiscordServerLink?",
-    answer: "Every community is tagged and cataloged into 8 primary genres: Gaming, Anime & Manga, Technology & Coding, Community & Social, Music & Audio, Education & Study, Crypto & Finance, and Art & Design. This makes finding specific sub-communities instantaneous.",
+    answer: "Every community is tagged and cataloged into 15 primary genres: Gaming, Anime & Manga, Technology & Coding, Community & Social, Music & Audio, Education & Science, Crypto & Finance, Art & Design, Movies & Entertainment, eSports & Tournaments, Artificial Intelligence, Sports & Fitness, Movies & Television, Podcasts & Talk, and Memes & Humor. This makes finding specific sub-communities instantaneous.",
   },
   {
     question: "Can a Discord server belong to multiple categories?",

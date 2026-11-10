@@ -453,6 +453,13 @@ export default function AddServerPage() {
                 <option value="education">Education &amp; Science</option>
                 <option value="finance">Crypto &amp; Finance</option>
                 <option value="art">Art &amp; Design</option>
+                <option value="movies-entertainment">Movies &amp; Entertainment</option>
+                <option value="esports-tournaments">eSports &amp; Tournaments</option>
+                <option value="artificial-intelligence">Artificial Inteligence</option>
+                <option value="sports-fitness">Sports &amp; Fitness</option>
+                <option value="movies-television">Movies &amp; Television</option>
+                <option value="podcasts-talk">Podcasts &amp; Talk</option>
+                <option value="memes-humor">Memes &amp; Humor</option>
               </select>
             </div>
           </div>

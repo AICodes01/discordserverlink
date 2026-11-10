@@ -14,6 +14,23 @@ import {
 import { CATEGORY_DATA, CategoryDetails } from "@/lib/categoryContent";
 import {
   Sparkles,
+  Bot,
+  ShieldAlert,
+  Lock,
+  Ban,
+  Clock,
+  PartyPopper,
+  Smile,
+  Laugh,
+  Radio,
+  Tv,
+  Dumbbell,
+  Activity,
+  Cpu,
+  Target,
+  Video,
+  Clapperboard,
+  Film,
   ShieldCheck,
   Zap,
   CheckCircle,
@@ -53,6 +70,23 @@ interface CategoryPageProps {
 }
 
 const ICON_MAP: Record<string, any> = {
+  Bot,
+  Film,
+  Clapperboard,
+  Video,
+  Target,
+  Cpu,
+  Activity,
+  Dumbbell,
+  Tv,
+  Radio,
+  Laugh,
+  Smile,
+  PartyPopper,
+  Clock,
+  Ban,
+  Lock,
+  ShieldAlert,
   Swords,
   Trophy,
   Users2,
@@ -85,17 +119,29 @@ function renderCategoryIcon(iconName: string, className = "w-5 h-5") {
   return <IconComponent className={className} />;
 }
 
+const CATEGORY_SLUG_ALIASES: Record<string, string> = {
+  entertainment: "movies-entertainment",
+  esports: "esports-tournaments",
+  "artificial-inteligence": "artificial-intelligence",
+  ai: "artificial-intelligence",
+  sports: "sports-fitness",
+  "movies-tv": "movies-television",
+  podcasts: "podcasts-talk",
+  memes: "memes-humor",
+};
+
 export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
+  const resolvedSlug = CATEGORY_SLUG_ALIASES[params.slug] || params.slug;
   let category: any = null;
   try {
     category = await prisma.category.findUnique({
-      where: { slug: params.slug },
+      where: { slug: resolvedSlug },
     });
   } catch {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const seed = require("@/prisma/seed-data.json");
-      category = (seed.categories || []).find((c: any) => c.slug === params.slug) || null;
+      category = (seed.categories || []).find((c: any) => c.slug === resolvedSlug) || null;
     } catch {}
   }
 
@@ -106,7 +152,7 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
   const page = Math.max(1, parseInt(searchParams?.page || "1", 10));
   const pageSuffix = page > 1 ? ` - Page ${page}` : "";
 
-  const customData = CATEGORY_DATA[params.slug];
+  const customData = CATEGORY_DATA[resolvedSlug];
   const title = (customData?.headline || `Latest ${category.name} Discord Server Join Links 2026`) + pageSuffix;
   const description =
     customData?.subheadline ||
@@ -115,8 +161,8 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
 
   const canonical =
     page > 1
-      ? `${SITE_URL}/category/${params.slug}?page=${page}`
-      : `${SITE_URL}/category/${params.slug}`;
+      ? `${SITE_URL}/category/${resolvedSlug}?page=${page}`
+      : `${SITE_URL}/category/${resolvedSlug}`;
 
   return {
     title,
@@ -134,6 +180,7 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
 }
 
 export default async function CategoryDetailPage({ params, searchParams }: CategoryPageProps) {
+  const resolvedSlug = CATEGORY_SLUG_ALIASES[params.slug] || params.slug;
   let category: any = null;
   let servers: any[] = [];
   let totalCount = 0;
@@ -148,7 +195,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
   try {
     const [dbCat, dbCats, catCounts, dbGlobalTotal] = await Promise.all([
       prisma.category.findUnique({
-        where: { slug: params.slug },
+        where: { slug: resolvedSlug },
       }),
       prisma.category.findMany({
         orderBy: { displayOrder: "asc" },
@@ -198,7 +245,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const seed = require("@/prisma/seed-data.json");
       allCategories = seed.categories || [];
-      category = (allCategories || []).find((c: any) => c.slug === params.slug) || null;
+      category = (allCategories || []).find((c: any) => c.slug === resolvedSlug) || null;
       const seedServers: any[] = seed.servers || [];
       globalTotal = seedServers.length;
 
