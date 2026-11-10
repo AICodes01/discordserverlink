@@ -1,94 +1,125 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
+import { Metadata } from "next";
 import {
   Clock,
   ArrowLeft,
-  Search,
+  HelpCircle,
+  Sparkles,
+  Bot,
+  Smile,
+  ShieldCheck,
+  CheckCircle,
   Calendar,
   Layers,
-  Copy,
-  Check,
   Cpu,
-  Info,
+  Search,
 } from "lucide-react";
+import SnowflakeConverterClient from "@/components/tools/SnowflakeConverterClient";
+import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Discord Snowflake to Timestamp Converter: Discord Account & Server Age Finder",
+  description:
+    "Discord Snowflake to Timestamp Converter: Decode any Discord ID (User, Server, Channel, Role, Message) into exact creation date, UTC time, and relative account age. 100% free with no login required.",
+  alternates: {
+    canonical: `${SITE_URL}/tools/snowflake-timestamp`,
+  },
+  openGraph: {
+    title: "Discord Snowflake to Timestamp Converter: Discord Account & Server Age Finder",
+    description:
+      "Find the exact creation date and account age of any Discord User, Server, Channel, or Message using their 64-bit Snowflake ID.",
+  },
+};
 
 export default function SnowflakeConverterPage() {
-  const [snowflakeInput, setSnowflakeInput] = useState("");
-  const [decoded, setDecoded] = useState<any | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [copiedDate, setCopiedDate] = useState(false);
+  const breadcrumbs = generateBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Tools", url: "/tools" },
+    {
+      name: "Discord Snowflake to Timestamp Converter",
+      url: "/tools/snowflake-timestamp",
+    },
+  ]);
 
-  const DISCORD_EPOCH = 1420070400000n;
+  const faqs = [
+    {
+      q: "Can I find out when an account was created using just their Discord ID?",
+      a: "Yes! Every Discord User ID is a 64-bit snowflake integer. The first 42 bits of that integer represent the exact number of milliseconds that have passed since the Discord Epoch (January 1, 2015). Our tool extracts that value to calculate the exact millisecond, day, and year the account was registered.",
+    },
+    {
+      q: "Does this tool work on Server IDs, Channel IDs, and Message IDs?",
+      a: "Yes! All Discord entities — including Users, Guilds (Servers), Channels, Roles, Emojis, and Messages — use the exact same Snowflake ID format. You can paste any of these IDs to find out when that specific entity was created.",
+    },
+    {
+      q: "What is the “Discord Epoch”?",
+      a: "The Discord Epoch is the custom starting timestamp used by Discord's backend engineering team: January 1, 2015 at 00:00:00 UTC (equivalent to 1420070400000 in Unix milliseconds). All Snowflake timestamps are calculated offset from this date.",
+    },
+    {
+      q: "How can I tell if an account is a newly created alt or scammer?",
+      a: "If someone messages you claiming to be a server administrator, trade middleman, or giveaway sponsor, copy their User ID and paste it here. If their account age shows “Created 2 days ago”, it is almost certainly a burner alt account or imposter.",
+    },
+    {
+      q: "How do I copy a Discord User ID or Server ID?",
+      a: "Open Discord Settings &gt; Advanced &gt; turn on “Developer Mode”. Now right-click any user avatar, server icon, or message, and select “Copy User ID” or “Copy Server ID”.",
+    },
+  ];
 
-  const handleDecode = (val?: string) => {
-    const input = (val !== undefined ? val : snowflakeInput).trim();
-    if (!input) return;
-
-    setError(null);
-    setDecoded(null);
-
-    // Validate that input is numeric and roughly between 15 and 20 digits
-    if (!/^\d{16,21}$/.test(input)) {
-      setError("Invalid Discord Snowflake ID. Snowflakes must be a 17-20 digit integer (e.g. 1198555191834247269).");
-      return;
-    }
-
-    try {
-      const snowflakeBigInt = BigInt(input);
-      const timestampMs = Number((snowflakeBigInt >> 22n) + DISCORD_EPOCH);
-      const date = new Date(timestampMs);
-
-      // Sanity check
-      if (isNaN(date.getTime()) || timestampMs < 1420070400000 || timestampMs > 2500000000000) {
-        setError("This ID produces an impossible timestamp. Please check your Discord ID.");
-        return;
-      }
-
-      const workerId = Number((snowflakeBigInt & 0x3e0000n) >> 17n);
-      const processId = Number((snowflakeBigInt & 0x1f000n) >> 12n);
-      const increment = Number(snowflakeBigInt & 0xfffn);
-
-      // Calculate relative time
-      const diffMs = Date.now() - timestampMs;
-      const daysAgo = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const yearsAgo = (daysAgo / 365.25).toFixed(1);
-
-      setDecoded({
-        id: input,
-        timestampMs,
-        unixSeconds: Math.floor(timestampMs / 1000),
-        isoString: date.toISOString(),
-        utcDateString: date.toUTCString(),
-        localDateString: date.toLocaleString(undefined, {
-          dateStyle: "full",
-          timeStyle: "medium",
-        }),
-        daysAgo,
-        yearsAgo,
-        workerId,
-        processId,
-        increment,
-      });
-    } catch (err: any) {
-      setError("Failed to parse Snowflake ID: " + err.message);
-    }
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: f.a,
+      },
+    })),
   };
 
-  const copyText = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedDate(true);
-    setTimeout(() => setCopiedDate(false), 2000);
-  };
-
-  const loadExample = (id: string) => {
-    setSnowflakeInput(id);
-    handleDecode(id);
+  const howToSchema = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: "How to Find the Creation Date of a Discord Account or Server",
+    description: "Step-by-step guide to decoding Discord Snowflake IDs to reveal creation timestamps and age.",
+    step: [
+      {
+        "@type": "HowToStep",
+        position: 1,
+        name: "Copy the Snowflake ID",
+        text: "Enable Developer Mode in Discord, right-click the user, server, or channel, and select “Copy ID”.",
+      },
+      {
+        "@type": "HowToStep",
+        position: 2,
+        name: "Paste into the Snowflake Decoder",
+        text: "Paste the 17-20 digit number into the search box above.",
+      },
+      {
+        "@type": "HowToStep",
+        position: 3,
+        name: "View Creation Date & Relative Age",
+        text: "Click “Decode ID” to instantly view the exact local date, UTC timestamp, Unix seconds, and relative age.",
+      },
+    ],
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
+      />
+
       {/* Back button */}
       <div>
         <Link
@@ -96,186 +127,237 @@ export default function SnowflakeConverterPage() {
           className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to All Tools</span>
+          <span>Back to All Discord Tools</span>
         </Link>
       </div>
 
-      {/* Header */}
-      <div className="relative rounded-3xl bg-zinc-900/80 border border-zinc-800 p-6 sm:p-10 overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-purple-500/20 text-purple-400 text-xs font-bold border border-purple-500/30">
+      {/* Hero Header */}
+      <div className="rounded-3xl bg-gradient-to-r from-zinc-900 via-purple-950/40 to-zinc-900 border border-zinc-800 p-6 sm:p-10 relative overflow-hidden shadow-2xl">
+        <div className="relative z-10 max-w-3xl space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-bold tracking-wide">
             <Clock className="w-3.5 h-3.5" />
-            <span>64-Bit Snowflake Decoder</span>
+            <span>Discord Snowflake ID to Timestamp</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-            Discord Snowflake to Timestamp & Account Age
+
+          <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+            Discord Snowflake to Timestamp Converter: <span className="text-purple-400">Discord Account &amp; Server Age Finder</span>
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl leading-relaxed">
-            Every Discord User, Server, Channel, Role, and Message has a unique 64-bit Snowflake ID that contains the exact millisecond it was created. Paste any ID to decode its creation timestamp and age.
-          </p>
+
+          <div className="space-y-3 text-zinc-300 text-sm sm:text-base leading-relaxed">
+            <p>
+              Discord Snowflake to Timestamp Converter: Have you ever wanted to know when a specific user joined Discord, when a community server was founded, or the exact millisecond a message was posted? In{" "}
+              <a
+                href="https://discord.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-discord-blurple underline font-semibold hover:text-discord-hover"
+              >
+                Discord
+              </a>
+              , every entity is given a unique 64-bit integer called a “Snowflake ID”.
+            </p>
+            <p>
+              Unlike random identification numbers, Discord Snowflakes are structured with a timestamp baked directly into the number itself. Our Snowflake Converter calculates the binary offset from the Discord Epoch (Jan 1, 2015) to uncover the exact creation date, local time, UTC timestamp, and account age in years and days.
+            </p>
+            <p className="text-zinc-400 text-xs sm:text-sm font-medium">
+              Simply paste any 17-20 digit Discord ID (User ID, Server ID, or Message ID) below and click “Decode ID” to check its age!
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Form Card */}
-      <div className="bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleDecode();
-          }}
-          className="space-y-3"
-        >
-          <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
-            Paste Discord Snowflake ID
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={snowflakeInput}
-                onChange={(e) => setSnowflakeInput(e.target.value)}
-                placeholder="e.g. 1198555191834247269 or 80351110224678912"
-                className="w-full bg-zinc-950 border border-zinc-700/80 rounded-2xl pl-11 pr-4 py-3 text-sm text-white font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition-all"
-              />
-              <Clock className="w-4 h-4 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            </div>
-            <button
-              type="submit"
-              disabled={!snowflakeInput.trim()}
-              className="inline-flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-glow-sm transition-all shrink-0"
-            >
-              <Search className="w-4 h-4" />
-              <span>Decode ID</span>
-            </button>
-          </div>
-        </form>
+      {/* Interactive Tool Component */}
+      <SnowflakeConverterClient />
 
-        {/* Examples */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 text-xs text-zinc-400">
-          <span className="font-semibold text-zinc-500">Quick Test IDs:</span>
-          {[
-            { label: "Wumpus Bot", id: "1198555191834247269" },
-            { label: "Discord First User", id: "80351110224678912" },
-            { label: "Modern Account", id: "1076543210987654321" },
-          ].map((ex) => (
-            <button
-              key={ex.id}
-              type="button"
-              onClick={() => loadExample(ex.id)}
-              className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-[11px] border border-zinc-700/60 transition-colors"
+      {/* How to Find Creation Date */}
+      <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
+        <h2 className="text-xl sm:text-2xl font-black text-white">
+          How to Find the Creation Date of a Discord Account or Server
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
+            <span className="text-xs font-bold text-purple-400">Step 1</span>
+            <h3 className="font-bold text-white text-sm">Copy the Snowflake ID</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Enable Developer Mode in Discord, right-click any user or server, and choose “Copy ID”.
+            </p>
+          </div>
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
+            <span className="text-xs font-bold text-purple-400">Step 2</span>
+            <h3 className="font-bold text-white text-sm">Paste into Decoder</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Enter the 17 to 20-digit number into the search box above and hit “Decode ID”.
+            </p>
+          </div>
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
+            <span className="text-xs font-bold text-purple-400">Step 3</span>
+            <h3 className="font-bold text-white text-sm">View Exact Age</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Read the exact registration date, UTC time, Unix seconds, and relative age breakdown.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* How Discord Snowflake IDs Work */}
+      <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
+        <h2 className="text-xl sm:text-2xl font-black text-white">
+          What is a Discord Snowflake ID and How Does It Work?
+        </h2>
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          Inspired by Twitter&apos;s Snowflake architecture, Discord uses 64-bit unsigned integers to ensure IDs are globally unique, k-sorted by creation time, and generated without a central database bottleneck. Here is the mathematical structure:
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-purple-400" />
+              <span>42 Bits - Millisecond Timestamp</span>
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Bits 63 through 22 represent milliseconds elapsed since the Discord Epoch (<code className="text-purple-300">1420070400000</code>). Shifting the ID right by 22 bits isolates this timestamp.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-emerald-400" />
+              <span>5 Bits - Internal Worker ID</span>
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Bits 21 through 17 represent the internal Discord backend cluster worker node (0 to 31) that originally manufactured the Snowflake.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <Layers className="w-4 h-4 text-amber-400" />
+              <span>5 Bits - Process ID</span>
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Bits 16 through 12 specify the internal worker operating process (0 to 31) handling that request to prevent multi-threaded ID collisions.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1.5">
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-discord-blurple" />
+              <span>12 Bits - Sequence Increment</span>
+            </h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Bits 11 through 0 count up from 0 to 4,095 for IDs generated within the very same millisecond on that process, ensuring zero duplicate IDs worldwide.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Features */}
+      <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
+        <h2 className="text-xl sm:text-2xl font-black text-white">Features</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>⏱️</span>
+              <span>Exact Millisecond Precision</span>
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Decodes creation timestamps down to the exact millisecond using 64-bit BigInt calculations.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>📅</span>
+              <span>Relative Age Calculator</span>
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Instantly calculates account age in years and total days (e.g. 5.4 years old / 1,980 days ago).
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>🌐</span>
+              <span>Local &amp; UTC Formats</span>
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Displays timestamps in your local device timezone, standardized UTC, Unix seconds, and ISO 8601.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>🔍</span>
+              <span>Universal Entity Support</span>
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Decodes IDs for Users, Servers, Channels, Roles, Emojis, and direct chat Messages.
+            </p>
+          </div>
+
+          <div className="sm:col-span-2 p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-1">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>🔒</span>
+              <span>100% Private Client-Side Math</span>
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Because Snowflakes encode timestamps mathematically, calculations run instantly in your browser with zero network tracking.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Related Resources Links */}
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-zinc-900 to-purple-950/40 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h4 className="text-sm font-bold text-white">Recommended Discord Resources</h4>
+          <p className="text-xs text-zinc-400">Explore more tools and directories on DiscordServerLink:</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <a
+            href="https://discordserverlink.com/discord-servers/"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 hover:text-white transition-colors border border-zinc-700/60"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <span>Discord Servers</span>
+          </a>
+          <a
+            href="https://discordserverlink.com/best-discord-bots-list/"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 hover:text-white transition-colors border border-zinc-700/60"
+          >
+            <Bot className="w-3.5 h-3.5 text-discord-blurple" />
+            <span>Discord Bots</span>
+          </a>
+          <a
+            href="https://discordserverlink.com/discord-emojis/"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 hover:text-white transition-colors border border-zinc-700/60"
+          >
+            <Smile className="w-3.5 h-3.5 text-amber-400" />
+            <span>Discord Emojis</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Frequently Asked Questions (FAQ) */}
+      <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-4">
+        <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+          <HelpCircle className="w-5 h-5 text-purple-400" />
+          <span>Frequently Asked Questions (FAQ)</span>
+        </h2>
+
+        <div className="space-y-3 pt-2">
+          {faqs.map((f, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-4 space-y-2"
             >
-              {ex.label}
-            </button>
+              <h3 className="font-bold text-sm text-white">{f.q}</h3>
+              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                {f.a}
+              </p>
+            </div>
           ))}
         </div>
       </div>
-
-      {/* Error */}
-      {error && (
-        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs sm:text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* Decoded Results Card */}
-      {decoded && (
-        <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
-            <div>
-              <span className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">
-                Decoded Discord ID
-              </span>
-              <p className="font-mono text-xl sm:text-2xl font-black text-white mt-0.5">
-                {decoded.id}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-bold">
-                {decoded.yearsAgo} years old ({decoded.daysAgo.toLocaleString("en-US")} days ago)
-              </span>
-            </div>
-          </div>
-
-          {/* Timestamps Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800 space-y-1.5">
-              <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-purple-400" />
-                <span>Exact Local Date & Time</span>
-              </span>
-              <p className="text-sm sm:text-base font-bold text-white">
-                {decoded.localDateString}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800 space-y-1.5">
-              <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                <span>UTC Time</span>
-              </span>
-              <p className="text-sm sm:text-base font-bold text-white">
-                {decoded.utcDateString}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800 space-y-1.5">
-              <span className="text-xs text-zinc-400">Unix Timestamp (Seconds)</span>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-mono font-bold text-zinc-200">
-                  {decoded.unixSeconds}
-                </p>
-                <button
-                  onClick={() => copyText(decoded.unixSeconds.toString())}
-                  className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
-                  title="Copy Unix seconds"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800 space-y-1.5">
-              <span className="text-xs text-zinc-400">ISO 8601 String</span>
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-mono font-bold text-zinc-200 truncate">
-                  {decoded.isoString}
-                </p>
-                <button
-                  onClick={() => copyText(decoded.isoString)}
-                  className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
-                  title="Copy ISO string"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Low Level Snowflake Anatomy */}
-          <div className="pt-4 border-t border-zinc-800 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <Cpu className="w-3.5 h-3.5 text-purple-400" />
-              <span>Internal Discord Snowflake Structure</span>
-            </h4>
-            <div className="grid grid-cols-3 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800">
-                <span className="text-zinc-500 block">Worker ID</span>
-                <span className="font-mono font-bold text-white">{decoded.workerId}</span>
-              </div>
-              <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800">
-                <span className="text-zinc-500 block">Process ID</span>
-                <span className="font-mono font-bold text-white">{decoded.processId}</span>
-              </div>
-              <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800">
-                <span className="text-zinc-500 block">Sequence Increment</span>
-                <span className="font-mono font-bold text-white">{decoded.increment}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
