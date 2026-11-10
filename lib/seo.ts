@@ -27,8 +27,10 @@ export function generateServerSchema(server: {
   memberCount: number;
   lastBumpedAt?: Date | string;
   categorySlug: string;
+  ratingValue?: string | number | null;
+  reviewCount?: number | null;
 }) {
-  return {
+  const schema: any = {
     "@context": "https://schema.org",
     "@type": "OnlineBusiness",
     name: `${server.name} Discord Server`,
@@ -41,14 +43,20 @@ export function generateServerSchema(server: {
       interactionType: "https://schema.org/JoinAction",
       userInteractionCount: server.memberCount,
     },
-    aggregateRating: {
+  };
+
+  // Only emit AggregateRating if genuine user reviews exist to strictly follow Google Search Quality & Rich Snippet Guidelines
+  if (server.reviewCount && server.reviewCount > 0 && server.ratingValue) {
+    schema.aggregateRating = {
       "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: Math.max(12, Math.floor(server.memberCount / 100)),
+      ratingValue: String(server.ratingValue),
+      reviewCount: server.reviewCount,
       bestRating: "5",
       worstRating: "1",
-    },
-  };
+    };
+  }
+
+  return schema;
 }
 
 export function generateBreadcrumbSchema(items: { name: string; url: string }[]) {

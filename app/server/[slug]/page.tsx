@@ -174,6 +174,8 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
     memberCount: server.memberCount,
     lastBumpedAt: server.lastBumpedAt,
     categorySlug: server.categorySlug,
+    ratingValue: reviewCount > 0 ? avgRating : null,
+    reviewCount: reviewCount,
   });
 
   const breadcrumbSchema = generateBreadcrumbSchema([
@@ -211,7 +213,7 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
   });
 
   return (
-    <div className="pb-20">
+    <div className="pb-28 lg:pb-16">
       {/* Inject SEO Schemas */}
       <script
         type="application/ld+json"
@@ -263,6 +265,9 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
                   <img
                     src={server.iconUrl}
                     alt={`${server.name} Discord icon`}
+                    width={112}
+                    height={112}
+                    decoding="async"
                     className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl border-4 border-zinc-900 object-cover shadow-2xl"
                   />
                 ) : (
@@ -594,6 +599,49 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Sticky Bottom Action Bar for High Conversion */}
+      <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-800 p-3 shadow-2xl flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {server.iconUrl ? (
+            <img
+              src={server.iconUrl}
+              alt={server.name}
+              width={36}
+              height={36}
+              className="w-9 h-9 rounded-xl object-cover shrink-0 border border-zinc-800"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-discord-blurple flex items-center justify-center text-white font-bold text-xs shrink-0">
+              {server.name.slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <div className="truncate">
+            <p className="text-xs font-bold text-white truncate">{server.name}</p>
+            <p className="text-[11px] text-discord-green font-medium flex items-center gap-1" suppressHydrationWarning>
+              <span className="w-1.5 h-1.5 rounded-full bg-discord-green animate-pulse" />
+              {server.memberCount.toLocaleString("en-US")} members
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <ServerBumpButton
+            serverId={server.id}
+            initialBumps={server.bumpsCount}
+            lastBumpedAt={server.lastBumpedAt}
+          />
+          <a
+            href={`/api/servers/${server.id}/join`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 rounded-xl bg-discord-blurple hover:bg-discord-hover text-xs font-bold text-white shadow-glow-sm flex items-center gap-1.5 transition"
+          >
+            <span>Join</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
       </div>
     </div>

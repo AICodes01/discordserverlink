@@ -5,13 +5,7 @@ import Link from "next/link";
 import { Search, Filter, Layers, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Explore Discord Servers - Search & Browse",
-  description:
-    "Search and discover thousands of active Discord servers by topic, game, tags, and category on discordserverlink.com.",
-};
-
-export const revalidate = 60;
+import { SITE_URL } from "@/lib/seo";
 
 interface ServersPageProps {
   searchParams: {
@@ -22,6 +16,44 @@ interface ServersPageProps {
     page?: string;
   };
 }
+
+export async function generateMetadata({ searchParams }: ServersPageProps): Promise<Metadata> {
+  const query = searchParams.q?.trim() || "";
+  const page = Math.max(1, parseInt(searchParams.page || "1", 10));
+  const hasFilter = Boolean(query || (searchParams.sort && searchParams.sort !== "bumped"));
+
+  let title = "Explore Discord Servers 2026 - Search & Browse Communities";
+  let description = "Search and discover thousands of active Discord servers by topic, game, tags, and category on discordserverlink.com.";
+
+  if (query) {
+    title = `Search results for "${query}" - Discord Servers`;
+    description = `Find active Discord servers matching "${query}". Join public voice chats, gaming guilds, and developer communities.`;
+  } else if (page > 1) {
+    title = `Explore Discord Servers 2026 - Page ${page} | DiscordServerLink`;
+  }
+
+  const canonical = page > 1 ? `${SITE_URL}/servers?page=${page}` : `${SITE_URL}/servers`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: hasFilter ? `${SITE_URL}/servers` : canonical,
+    },
+    // Protect crawl budget: noindex internal search and sorting filter permutations
+    robots: hasFilter
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+  };
+}
+
+export const revalidate = 60;
 
 export default async function ServersPage({ searchParams }: ServersPageProps) {
   const query = searchParams.q || "";

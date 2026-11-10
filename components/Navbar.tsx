@@ -1,10 +1,11 @@
 "use client";
 
 import NextLink from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import {
   Server,
+  Layers,
   Bot,
   Smile,
   Wrench,
@@ -15,6 +16,8 @@ import {
   X,
   User,
   LogOut,
+  Users,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -24,10 +27,57 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Debounced search autocomplete
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/servers?q=${encodeURIComponent(q)}&limit=4`);
+        if (res.ok) {
+          const data = await res.json();
+          setSuggestions(data.servers || []);
+          setShowDropdown(true);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setIsSearching(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Click outside listener to dismiss search dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setShowDropdown(false);
       router.push(`/servers?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
@@ -62,28 +112,92 @@ export default function Navbar() {
             </NextLink>
           </div>
 
-          {/* Desktop Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md mx-6">
+          {/* Desktop Search Bar with Live Autocomplete */}
+          <div ref={searchContainerRef} className="hidden md:flex flex-1 max-w-md mx-6 relative">
             <form onSubmit={handleSearch} className="w-full relative">
               <input
                 type="text"
                 placeholder="Search Minecraft, Gaming, Anime, Tech..."
                 value={searchQuery}
+                onFocus={() => {
+                  if (suggestions.length > 0) setShowDropdown(true);
+                }}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-900/90 border border-zinc-800 text-sm rounded-xl pl-10 pr-4 py-2 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-discord-blurple focus:ring-1 focus:ring-discord-blurple transition-all"
+                className="w-full bg-zinc-900/90 border border-zinc-800 text-sm rounded-xl pl-10 pr-9 py-2 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-discord-blurple focus:ring-1 focus:ring-discord-blurple transition-all"
               />
               <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              {isSearching && (
+                <Loader2 className="w-4 h-4 text-discord-blurple absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />
+              )}
             </form>
+
+            {/* Instant Search Dropdown */}
+            {showDropdown && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="p-2 space-y-1">
+                  {suggestions.map((item) => (
+                    <NextLink
+                      key={item.id}
+                      href={`/server/${item.slug}`}
+                      onClick={() => {
+                        setShowDropdown(false);
+                        setSearchQuery("");
+                      }}
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-800/80 transition-colors group"
+                    >
+                      {item.iconUrl ? (
+                        <img
+                          src={item.iconUrl}
+                          alt={item.name}
+                          className="w-8 h-8 rounded-lg object-cover bg-zinc-800"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-discord-blurple flex items-center justify-center text-white font-bold text-xs">
+                          {item.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-xs font-bold text-white group-hover:text-discord-blurple truncate transition-colors">
+                          {item.name}
+                        </p>
+                        <p className="text-[11px] text-zinc-400 truncate">
+                          {item.shortDescription || item.categorySlug}
+                        </p>
+                      </div>
+                      <div className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1 shrink-0">
+                        <Users className="w-3 h-3 text-zinc-500" />
+                        <span>{(item.memberCount || 0).toLocaleString()}</span>
+                      </div>
+                    </NextLink>
+                  ))}
+                </div>
+
+                <NextLink
+                  href={`/servers?q=${encodeURIComponent(searchQuery.trim())}`}
+                  onClick={() => setShowDropdown(false)}
+                  className="block px-4 py-2.5 text-xs font-semibold text-center text-discord-blurple bg-zinc-950/80 hover:bg-zinc-800/60 border-t border-zinc-800 transition-colors"
+                >
+                  View all results for &ldquo;{searchQuery}&rdquo; &rarr;
+                </NextLink>
+              </div>
+            )}
           </div>
 
           {/* Nav Items */}
           <nav className="hidden lg:flex items-center space-x-1">
             <NextLink
-              href="/categories"
+              href="/servers"
               className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors flex items-center space-x-1.5"
             >
               <Server className="w-4 h-4 text-discord-blurple" />
-              <span>Server</span>
+              <span>Servers</span>
+            </NextLink>
+            <NextLink
+              href="/categories"
+              className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors flex items-center space-x-1.5"
+            >
+              <Layers className="w-4 h-4 text-sky-400" />
+              <span>Categories</span>
             </NextLink>
             <NextLink
               href="/bots"
@@ -162,26 +276,17 @@ export default function Navbar() {
                       className="flex items-center space-x-2 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
                     >
                       <PlusCircle className="w-4 h-4 text-discord-blurple" />
-                      <span>Add Discord Server</span>
-                    </NextLink>
-
-                    <NextLink
-                      href="/bots/new"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
-                    >
-                      <Bot className="w-4 h-4 text-indigo-400" />
-                      <span>Add Discord Bot</span>
+                      <span>Add New Server</span>
                     </NextLink>
 
                     {isAdmin && (
                       <NextLink
                         href="/admin"
                         onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center space-x-2 px-4 py-2.5 text-sm text-discord-green hover:bg-discord-green/10 transition font-semibold"
+                        className="flex items-center space-x-2 px-4 py-2.5 text-sm text-discord-green hover:bg-zinc-800 transition"
                       >
                         <ShieldAlert className="w-4 h-4" />
-                        <span>Admin Control Panel</span>
+                        <span>Admin Dashboard</span>
                       </NextLink>
                     )}
 
@@ -237,12 +342,20 @@ export default function Navbar() {
 
           <div className="flex flex-col space-y-1">
             <NextLink
-              href="/categories"
+              href="/servers"
               onClick={() => setMobileMenuOpen(false)}
               className="px-3 py-2 rounded-lg text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 transition flex items-center space-x-2"
             >
               <Server className="w-5 h-5 text-discord-blurple" />
-              <span>Server</span>
+              <span>Explore Servers</span>
+            </NextLink>
+            <NextLink
+              href="/categories"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg text-base font-medium text-zinc-300 hover:text-white hover:bg-zinc-900 transition flex items-center space-x-2"
+            >
+              <Layers className="w-5 h-5 text-sky-400" />
+              <span>Categories</span>
             </NextLink>
             <NextLink
               href="/bots"

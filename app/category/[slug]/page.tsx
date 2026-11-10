@@ -130,6 +130,24 @@ const CATEGORY_SLUG_ALIASES: Record<string, string> = {
   memes: "memes-humor",
 };
 
+const RELATED_CATEGORIES_MAP: Record<string, string[]> = {
+  gaming: ["esports-tournaments", "memes-humor", "technology", "community"],
+  anime: ["movies-entertainment", "community", "art", "memes-humor"],
+  technology: ["artificial-intelligence", "education", "gaming", "finance"],
+  community: ["gaming", "anime", "music", "memes-humor"],
+  music: ["podcasts-talk", "community", "art", "gaming"],
+  education: ["technology", "artificial-intelligence", "podcasts-talk", "community"],
+  finance: ["technology", "artificial-intelligence", "education", "community"],
+  art: ["anime", "gaming", "music", "community"],
+  "movies-entertainment": ["movies-television", "anime", "podcasts-talk", "music"],
+  "esports-tournaments": ["gaming", "sports-fitness", "community", "podcasts-talk"],
+  "artificial-intelligence": ["technology", "education", "podcasts-talk", "finance"],
+  "sports-fitness": ["esports-tournaments", "community", "podcasts-talk"],
+  "movies-television": ["movies-entertainment", "podcasts-talk", "anime", "memes-humor"],
+  "podcasts-talk": ["community", "movies-television", "education", "technology"],
+  "memes-humor": ["gaming", "anime", "community", "movies-entertainment"],
+};
+
 export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
   const resolvedSlug = CATEGORY_SLUG_ALIASES[params.slug] || params.slug;
   let category: any = null;
@@ -773,6 +791,70 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
           </div>
         </section>
       )}
+
+      {/* Related Categories Topical Cluster Mesh */}
+      {(() => {
+        const relatedSlugs = RELATED_CATEGORIES_MAP[category.slug] || [
+          "gaming",
+          "technology",
+          "community",
+          "anime",
+        ];
+        const relatedCategories = allCategories
+          .filter((c) => relatedSlugs.includes(c.slug) && c.slug !== category.slug)
+          .slice(0, 4);
+
+        if (relatedCategories.length === 0) return null;
+
+        return (
+          <section className="p-6 sm:p-8 rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold text-discord-blurple uppercase tracking-wider">
+                <Layers className="w-4 h-4" />
+                <span>Explore Related Categories</span>
+              </div>
+              <Link
+                href="/categories"
+                className="text-xs text-zinc-400 hover:text-white transition flex items-center gap-1 font-semibold"
+              >
+                <span>All Categories</span>
+                <span>&rarr;</span>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+              {relatedCategories.map((relCat) => {
+                const count = countMap[relCat.slug] || 0;
+                return (
+                  <Link
+                    key={relCat.slug}
+                    href={`/category/${relCat.slug}`}
+                    className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 hover:border-discord-blurple transition-all group flex flex-col justify-between space-y-3 hover:scale-[1.02]"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-xl bg-discord-blurple/10 border border-discord-blurple/20 text-discord-blurple flex items-center justify-center group-hover:bg-discord-blurple group-hover:text-white transition-colors">
+                        {renderCategoryIcon(relCat.slug, "w-5 h-5")}
+                      </div>
+                      <span className="text-[11px] font-semibold text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">
+                        {count.toLocaleString()} servers
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold text-white group-hover:text-discord-blurple transition-colors flex items-center gap-1.5">
+                        <span>{relCat.name}</span>
+                      </h3>
+                      <p className="text-xs text-zinc-400 line-clamp-2 mt-1">
+                        {relCat.seoDescription || `Discover top ${relCat.name} communities.`}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Category FAQs with Schema.org Integration */}
       <FAQAccordion
