@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShieldAlert,
@@ -40,6 +40,10 @@ import {
   Code2,
   ShieldCheck,
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  Star,
 } from "lucide-react";
 import AdminBlogManager from "@/components/admin/AdminBlogManager";
 
@@ -100,9 +104,12 @@ export default function AdminDashboardClient({
   const [videos, setVideos] = useState<any[]>(initialVideos);
   const [blogPosts, setBlogPosts] = useState<any[]>(initialBlogPosts);
 
-  // Filters
+  // Filters & Pagination
   const [serverSearch, setServerSearch] = useState("");
   const [serverStatusFilter, setServerStatusFilter] = useState("ALL");
+  const [serverTierFilter, setServerTierFilter] = useState<"ALL" | "normal" | "featured" | "partner">("ALL");
+  const [serverPage, setServerPage] = useState(1);
+  const serversPerPage = 25;
   const [userSearch, setUserSearch] = useState("");
   const [pageSearch, setPageSearch] = useState("");
   const [pageSort, setPageSort] = useState<"today" | "yesterday" | "allTime">("today");
@@ -136,6 +143,38 @@ export default function AdminDashboardClient({
   const [editLoading, setEditLoading] = useState(false);
 
   // Handlers for Server actions
+  const handleChangeServerTier = async (
+    id: string,
+    tier: "normal" | "featured" | "partner"
+  ) => {
+    const isFeatured = tier === "featured";
+    const isPartnered = tier === "partner";
+
+    try {
+      const res = await fetch("/api/admin/servers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isFeatured, isPartnered }),
+      });
+      if (res.ok) {
+        setServers((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, isFeatured, isPartnered } : s))
+        );
+        showToast(
+          tier === "featured"
+            ? "Server tier set to ⭐ Featured"
+            : tier === "partner"
+            ? "Server tier set to 👑 Partner"
+            : "Server tier set to ⚪ Normal"
+        );
+      } else {
+        showToast("Failed to update server tier.", "error");
+      }
+    } catch {
+      showToast("Network error.", "error");
+    }
+  };
+
   const handleToggleServerFlag = async (
     id: string,
     field: "isFeatured" | "isVerified" | "isPartnered" | "isNsfw",
@@ -374,7 +413,7 @@ export default function AdminDashboardClient({
     }
   };
 
-  // Filtered servers
+  // Filtered servers with tier filter support
   const filteredServers = servers.filter((s) => {
     const matchesSearch =
       s.name.toLowerCase().includes(serverSearch.toLowerCase()) ||
@@ -382,8 +421,20 @@ export default function AdminDashboardClient({
       (s.guildId && s.guildId.includes(serverSearch));
     const matchesStatus =
       serverStatusFilter === "ALL" ? true : s.status === serverStatusFilter;
-    return matchesSearch && matchesStatus;
+    let matchesTier = true;
+    if (serverTierFilter === "featured") matchesTier = !!s.isFeatured;
+    else if (serverTierFilter === "partner") matchesTier = !!s.isPartnered;
+    else if (serverTierFilter === "normal") matchesTier = !s.isFeatured && !s.isPartnered;
+
+    return matchesSearch && matchesStatus && matchesTier;
   });
+
+  // Server pagination values (25 per page)
+  const totalServerPages = Math.max(1, Math.ceil(filteredServers.length / serversPerPage));
+  const currentServerPage = Math.min(Math.max(1, serverPage), totalServerPages);
+  const serverStartIndex = (currentServerPage - 1) * serversPerPage;
+  const serverEndIndex = Math.min(serverStartIndex + serversPerPage, filteredServers.length);
+  const paginatedServers = filteredServers.slice(serverStartIndex, serverEndIndex);
 
   // Filtered and sorted page-wise stats
   const pageWiseList = (analytics?.pageWiseStats || [])
@@ -1726,14 +1777,20 @@ export default function AdminDashboardClient({
                   type="text"
                   placeholder="Search by server name, slug, or Discord Guild ID..."
                   value={serverSearch}
-                  onChange={(e) => setServerSearch(e.target.value)}
+                  onChange={(e) => {
+                    setServerSearch(e.target.value);
+                    setServerPage(1);
+                  }}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-4 py-2 text-xs text-zinc-200 focus:outline-none focus:border-discord-blurple"
                 />
               </div>
 
               <select
                 value={serverStatusFilter}
-                onChange={(e) => setServerStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setServerStatusFilter(e.target.value);
+                  setServerPage(1);
+                }}
                 className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-discord-blurple"
               >
                 <option value="ALL">All Statuses</option>
@@ -1742,6 +1799,24 @@ export default function AdminDashboardClient({
                 <option value="REJECTED">Rejected</option>
                 <option value="BANNED">Banned</option>
               </select>
+
+              <select
+                value={serverTierFilter}
+                onChange={(e) => {
+                  setServerTierFilter(e.target.value as any);
+                  setServerPage(1);
+                }}
+                className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-discord-blurple"
+              >
+                <option value="ALL">All Tiers (Normal, Feat, Partner)</option>
+                <option value="normal">⚪ Normal Only</option>
+                <option value="featured">⭐ Featured Only</option>
+                <option value="partner">👑 Partner Only</option>
+              </select>
+
+              <div className="text-xs text-zinc-400 font-medium ml-auto">
+                Showing {paginatedServers.length} of {filteredServers.length.toLocaleString("en-US")} (Page {currentServerPage} of {totalServerPages})
+              </div>
             </div>
 
             {/* Servers Table */}
@@ -1754,86 +1829,95 @@ export default function AdminDashboardClient({
                       <th className="py-3 px-4">Category</th>
                       <th className="py-3 px-4">Members</th>
                       <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Badges</th>
+                      <th className="py-3 px-4">Tier</th>
+                      <th className="py-3 px-4">Verified</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800/60">
-                    {filteredServers.map((server) => (
-                      <tr key={server.id} className="hover:bg-zinc-900/40 transition">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            {server.iconUrl ? (
-                              <img
-                                src={server.iconUrl}
-                                alt=""
-                                className="w-8 h-8 rounded-xl object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center font-bold text-xs text-zinc-300">
-                                {server.name.slice(0, 2)}
+                    {paginatedServers.length > 0 ? (
+                      paginatedServers.map((server) => (
+                        <tr key={server.id} className="hover:bg-zinc-900/40 transition">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              {server.iconUrl ? (
+                                <img
+                                  src={server.iconUrl}
+                                  alt=""
+                                  className="w-8 h-8 rounded-xl object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center font-bold text-xs text-zinc-300">
+                                  {server.name.slice(0, 2)}
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-bold text-white">{server.name}</p>
+                                <p className="text-[10px] font-mono text-zinc-500">
+                                  /{server.slug}
+                                </p>
                               </div>
-                            )}
-                            <div>
-                              <p className="font-bold text-white">{server.name}</p>
-                              <p className="text-[10px] font-mono text-zinc-500">
-                                /{server.slug}
-                              </p>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 text-[11px] font-medium">
-                            {server.categorySlug}
-                          </span>
-                        </td>
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 text-[11px] font-medium">
+                              {server.categorySlug}
+                            </span>
+                          </td>
 
-                        <td className="py-3 px-4 font-mono text-zinc-300">
-                          {server.memberCount?.toLocaleString('en-US') || 0}
-                        </td>
+                          <td className="py-3 px-4 font-mono text-zinc-300">
+                            {server.memberCount?.toLocaleString('en-US') || 0}
+                          </td>
 
-                        <td className="py-3 px-4">
-                          <select
-                            value={server.status}
-                            onChange={(e) =>
-                              handleChangeServerStatus(server.id, e.target.value)
-                            }
-                            className={`px-2 py-1 rounded-lg text-xs font-bold border ${
-                              server.status === "APPROVED"
-                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                : server.status === "PENDING"
-                                ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                                : "bg-red-500/10 text-red-400 border-red-500/30"
-                            }`}
-                          >
-                            <option value="APPROVED">APPROVED</option>
-                            <option value="PENDING">PENDING</option>
-                            <option value="REJECTED">REJECTED</option>
-                            <option value="BANNED">BANNED</option>
-                          </select>
-                        </td>
-
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() =>
-                                handleToggleServerFlag(
-                                  server.id,
-                                  "isFeatured",
-                                  server.isFeatured
-                                )
+                          <td className="py-3 px-4">
+                            <select
+                              value={server.status}
+                              onChange={(e) =>
+                                handleChangeServerStatus(server.id, e.target.value)
                               }
-                              title="Toggle Featured"
-                              className={`p-1 rounded-md text-[10px] font-bold border transition ${
-                                server.isFeatured
-                                  ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                                  : "bg-zinc-800 text-zinc-500 border-transparent hover:text-zinc-300"
+                              className={`px-2 py-1 rounded-lg text-xs font-bold border ${
+                                server.status === "APPROVED"
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                  : server.status === "PENDING"
+                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                  : "bg-red-500/10 text-red-400 border-red-500/30"
                               }`}
                             >
-                              ⭐ Feat
-                            </button>
+                              <option value="APPROVED">APPROVED</option>
+                              <option value="PENDING">PENDING</option>
+                              <option value="REJECTED">REJECTED</option>
+                              <option value="BANNED">BANNED</option>
+                            </select>
+                          </td>
 
+                          <td className="py-3 px-4">
+                            <select
+                              value={
+                                server.isFeatured
+                                  ? "featured"
+                                  : server.isPartnered
+                                  ? "partner"
+                                  : "normal"
+                              }
+                              onChange={(e) =>
+                                handleChangeServerTier(server.id, e.target.value as any)
+                              }
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                                server.isFeatured
+                                  ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
+                                  : server.isPartnered
+                                  ? "bg-discord-blurple/25 text-indigo-200 border-discord-blurple/60"
+                                  : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700"
+                              }`}
+                            >
+                              <option value="normal">⚪ Normal</option>
+                              <option value="featured">⭐ Featured</option>
+                              <option value="partner">👑 Partner</option>
+                            </select>
+                          </td>
+
+                          <td className="py-3 px-4">
                             <button
                               onClick={() =>
                                 handleToggleServerFlag(
@@ -1842,51 +1926,193 @@ export default function AdminDashboardClient({
                                   server.isVerified
                                 )
                               }
-                              title="Toggle Verified"
-                              className={`p-1 rounded-md text-[10px] font-bold border transition ${
+                              title={
+                                server.isVerified
+                                  ? "Verified (click to remove)"
+                                  : "Click to mark Verified"
+                              }
+                              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 ${
                                 server.isVerified
                                   ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                                  : "bg-zinc-800 text-zinc-500 border-transparent hover:text-zinc-300"
+                                  : "bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300"
                               }`}
                             >
-                              ✓ Verif
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>{server.isVerified ? "Verified" : "Unverified"}</span>
                             </button>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Link
-                              href={`/server/${server.slug}`}
-                              target="_blank"
-                              className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </Link>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Link
+                                href={`/server/${server.slug}`}
+                                target="_blank"
+                                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
+                                title="View public page"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </Link>
 
-                            <button
-                              onClick={() => setEditingServer(server)}
-                              className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
+                              <button
+                                onClick={() => setEditingServer(server)}
+                                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
+                                title="Edit Server"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
 
-                            <button
-                              onClick={() =>
-                                handleDeleteServer(server.id, server.name)
-                              }
-                              className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                              <button
+                                onClick={() =>
+                                  handleDeleteServer(server.id, server.name)
+                                }
+                                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition"
+                                title="Delete Server"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-zinc-500">
+                          No servers matched your current filter.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredServers.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-xs">
+                <div className="text-zinc-400 font-medium">
+                  Showing <span className="font-bold text-white">{(serverStartIndex + 1).toLocaleString("en-US")}</span> to{" "}
+                  <span className="font-bold text-white">{serverEndIndex.toLocaleString("en-US")}</span> of{" "}
+                  <span className="font-bold text-discord-blurple">{filteredServers.length.toLocaleString("en-US")}</span> servers
+                  <span className="text-zinc-600 ml-2">({serversPerPage} per page)</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                  {/* First Page */}
+                  <button
+                    onClick={() => setServerPage(1)}
+                    disabled={currentServerPage === 1}
+                    title="First Page"
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold"
+                  >
+                    «
+                  </button>
+
+                  {/* Prev Page */}
+                  <button
+                    onClick={() => setServerPage((p) => Math.max(1, p - 1))}
+                    disabled={currentServerPage === 1}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Prev</span>
+                  </button>
+
+                  {/* Dynamic Page Numbers Window */}
+                  {(() => {
+                    const pages: (number | string)[] = [];
+                    const total = totalServerPages;
+                    const cur = currentServerPage;
+                    const delta = 2;
+
+                    const left = Math.max(1, cur - delta);
+                    const right = Math.min(total, cur + delta);
+
+                    if (left > 1) {
+                      pages.push(1);
+                      if (left > 2) pages.push("...");
+                    }
+
+                    for (let i = left; i <= right; i++) {
+                      pages.push(i);
+                    }
+
+                    if (right < total) {
+                      if (right < total - 1) pages.push("...");
+                      pages.push(total);
+                    }
+
+                    return pages.map((pageNum, idx) => {
+                      if (pageNum === "...") {
+                        return (
+                          <span
+                            key={`dots-${idx}`}
+                            className="px-2 py-1 text-zinc-600 font-bold select-none"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+                      const isActive = pageNum === cur;
+                      return (
+                        <button
+                          key={`page-${pageNum}`}
+                          onClick={() => setServerPage(Number(pageNum))}
+                          className={`min-w-[32px] h-8 px-2.5 rounded-lg font-bold transition text-xs ${
+                            isActive
+                              ? "bg-discord-blurple text-white shadow-glow-sm"
+                              : "bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    });
+                  })()}
+
+                  {/* Next Page */}
+                  <button
+                    onClick={() => setServerPage((p) => Math.min(totalServerPages, p + 1))}
+                    disabled={currentServerPage === totalServerPages}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Last Page */}
+                  <button
+                    onClick={() => setServerPage(totalServerPages)}
+                    disabled={currentServerPage === totalServerPages}
+                    title="Last Page"
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold"
+                  >
+                    »
+                  </button>
+                </div>
+
+                {/* Quick Jump Input */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-zinc-500">Go to:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalServerPages}
+                    defaultValue={currentServerPage}
+                    key={currentServerPage}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = parseInt((e.target as HTMLInputElement).value, 10);
+                        if (!isNaN(val)) {
+                          setServerPage(Math.min(Math.max(1, val), totalServerPages));
+                        }
+                      }
+                    }}
+                    className="w-14 bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-center font-bold text-white focus:outline-none focus:border-discord-blurple"
+                  />
+                  <span className="text-zinc-500 font-mono">/ {totalServerPages}</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -2608,6 +2834,55 @@ export default function AdminDashboardClient({
                   <option value="PENDING">PENDING</option>
                   <option value="REJECTED">REJECTED</option>
                   <option value="BANNED">BANNED</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Server Tier
+                </label>
+                <select
+                  value={
+                    editingServer.isFeatured
+                      ? "featured"
+                      : editingServer.isPartnered
+                      ? "partner"
+                      : "normal"
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEditingServer({
+                      ...editingServer,
+                      isFeatured: val === "featured",
+                      isPartnered: val === "partner",
+                    });
+                  }}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-discord-blurple"
+                >
+                  <option value="normal">⚪ Normal</option>
+                  <option value="featured">⭐ Featured</option>
+                  <option value="partner">👑 Partner</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Verified Badge
+                </label>
+                <select
+                  value={editingServer.isVerified ? "true" : "false"}
+                  onChange={(e) =>
+                    setEditingServer({
+                      ...editingServer,
+                      isVerified: e.target.value === "true",
+                    })
+                  }
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-discord-blurple"
+                >
+                  <option value="false">Unverified</option>
+                  <option value="true">✓ Verified Badge</option>
                 </select>
               </div>
             </div>
