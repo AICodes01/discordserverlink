@@ -18,6 +18,7 @@ import {
   LogOut,
   Users,
   Loader2,
+  LayoutDashboard,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -224,6 +225,15 @@ export default function Navbar() {
 
           {/* Right Action buttons */}
           <div className="flex items-center space-x-3">
+            {session && (
+              <NextLink
+                href="/dashboard"
+                className="hidden lg:inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800/80 transition"
+              >
+                <LayoutDashboard className="w-4 h-4 text-discord-blurple" />
+                <span>Dashboard</span>
+              </NextLink>
+            )}
             <NextLink
               href="/servers/new"
               className="hidden sm:inline-flex items-center space-x-1.5 bg-discord-blurple hover:bg-discord-hover text-white px-3.5 py-2 rounded-xl text-sm font-semibold shadow-glow-sm hover:shadow-glow transition-all"
@@ -271,12 +281,30 @@ export default function Navbar() {
                     </div>
 
                     <NextLink
+                      href="/dashboard"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center space-x-2 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-discord-blurple" />
+                      <span>My Dashboard</span>
+                    </NextLink>
+
+                    <NextLink
                       href="/servers/new"
                       onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center space-x-2 px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
+                      className="flex items-center space-x-2 px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
                     >
-                      <PlusCircle className="w-4 h-4 text-discord-blurple" />
+                      <PlusCircle className="w-4 h-4 text-zinc-400" />
                       <span>Add New Server</span>
+                    </NextLink>
+
+                    <NextLink
+                      href="/bots/new"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center space-x-2 px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition"
+                    >
+                      <Bot className="w-4 h-4 text-zinc-400" />
+                      <span>Add Discord Bot</span>
                     </NextLink>
 
                     {isAdmin && (
@@ -381,6 +409,16 @@ export default function Navbar() {
               <Wrench className="w-5 h-5 text-emerald-400" />
               <span>Tools</span>
             </NextLink>
+            {session && (
+              <NextLink
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg text-base font-semibold text-white bg-discord-blurple/20 border border-discord-blurple/30 hover:bg-discord-blurple/30 transition flex items-center space-x-2"
+              >
+                <LayoutDashboard className="w-5 h-5 text-discord-blurple" />
+                <span>My Dashboard</span>
+              </NextLink>
+            )}
             <NextLink
               href="/servers/new"
               onClick={() => setMobileMenuOpen(false)}

@@ -22,10 +22,11 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  servers       Server[]
-  reviews       Review[]
-  bumps         Bump[]
-  auditLogs     AuditLog[]
+  servers           Server[]
+  reviews           Review[]
+  bumps             Bump[]
+  auditLogs         AuditLog[]
+  promotionRequests PromotionRequest[]
 }
 
 model Server {
@@ -46,19 +47,22 @@ model Server {
   language         String    @default("en")
   isNsfw           Boolean   @default(false)
   isFeatured       Boolean   @default(false)
-  isVerified       Boolean   @default(false)
-  isPartnered      Boolean   @default(false)
-  status           String    @default("APPROVED") // PENDING, APPROVED, REJECTED, BANNED
-  bumpsCount       Int       @default(0)
-  lastBumpedAt     DateTime  @default(now())
-  viewsCount       Int       @default(0)
-  joinsCount       Int       @default(0)
+  isVerified        Boolean   @default(false)
+  isPartnered       Boolean   @default(false)
+  featuredUntil     DateTime?
+  promotionPlan     String?   // "1_month", "3_months"
+  status            String    @default("APPROVED") // PENDING, APPROVED, REJECTED, BANNED
+  bumpsCount        Int       @default(0)
+  lastBumpedAt      DateTime  @default(now())
+  viewsCount        Int       @default(0)
+  joinsCount        Int       @default(0)
   
-  ownerId          String
-  owner            User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId           String
+  owner             User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  reviews          Review[]
-  bumps            Bump[]
+  reviews           Review[]
+  bumps             Bump[]
+  promotionRequests PromotionRequest[]
 
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -186,6 +190,29 @@ model BlogPost {
   @@index([category])
   @@index([published])
   @@index([createdAt])
+}
+
+model PromotionRequest {
+  id           String    @id @default(cuid())
+  serverId     String
+  server       Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan         String    // "1_month" or "3_months"
+  durationDays Int       @default(30)
+  amount       Float     @default(5.0)
+  contactInfo  String
+  notes        String?
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNotes   String?
+  approvedAt   DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([serverId])
+  @@index([userId])
+  @@index([status])
 }
 
 

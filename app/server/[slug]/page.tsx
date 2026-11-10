@@ -23,6 +23,7 @@ import ServerBumpButton from "@/components/ServerBumpButton";
 import ServerCard from "@/components/ServerCard";
 import ReviewForm from "./ReviewForm";
 import ShareModalButton from "./ShareModalButton";
+import JoinButton from "@/components/JoinButton";
 import { generateServerSchema, generateBreadcrumbSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
 
 export const revalidate = 60;
@@ -154,6 +155,16 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
 
   if (!server) {
     notFound();
+  }
+
+  // Increment server view count asynchronously
+  if (server?.id) {
+    prisma.server
+      .update({
+        where: { id: server.id },
+        data: { viewsCount: { increment: 1 } },
+      })
+      .catch(() => {});
   }
 
   // Calculate average rating
@@ -324,15 +335,11 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
 
             {/* Right: Join & Share Actions */}
             <div className="flex flex-col sm:flex-row md:flex-col items-stretch gap-3 w-full md:w-56 flex-shrink-0">
-              <a
-                href={server.inviteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-discord-blurple hover:bg-discord-hover text-white font-bold text-base shadow-glow hover:shadow-glow-sm transition text-center"
-              >
-                <span>Join Discord</span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              <JoinButton
+                serverId={server.id}
+                inviteUrl={server.inviteUrl}
+                serverName={server.name}
+              />
 
               <ShareModalButton serverName={server.name} slug={server.slug} />
             </div>

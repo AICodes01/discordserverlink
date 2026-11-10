@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Bot,
@@ -14,6 +15,7 @@ import {
   Layers,
   HelpCircle,
   Info,
+  Lock,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -28,6 +30,7 @@ const CATEGORIES = [
 
 export default function NewBotPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   const [name, setName] = useState("");
   const [clientId, setClientId] = useState("");
@@ -169,11 +172,31 @@ export default function NewBotPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: Form (7 cols) */}
         <div className="lg:col-span-7 bg-zinc-900/80 rounded-2xl border border-zinc-800 p-6 sm:p-8 space-y-6">
-          {error && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
-              {error}
+          {status === "unauthenticated" ? (
+            <div className="text-center py-8 space-y-5">
+              <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto shadow-inner">
+                <Lock className="w-8 h-8" />
+              </div>
+              <div className="space-y-2 max-w-md mx-auto">
+                <h2 className="text-xl font-black text-white">Sign In Required to List a Discord Bot</h2>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Only logged-in developers can list a Discord bot. Signing in links your bot to your dashboard so you can view statistics and manage or remove it anytime.
+                </p>
+              </div>
+              <Link
+                href="/login?callbackUrl=/bots/new"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white font-bold text-sm shadow-glow transition hover:scale-105"
+              >
+                <span>Sign in with Discord to Continue</span>
+              </Link>
             </div>
-          )}
+          ) : (
+            <>
+              {error && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+                  {error}
+                </div>
+              )}
 
           {successSlug && (
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center gap-2">
@@ -376,6 +399,8 @@ export default function NewBotPage() {
               </button>
             </div>
           </form>
+          </>
+          )}
         </div>
 
         {/* Right: Live Preview Card (5 cols) */}

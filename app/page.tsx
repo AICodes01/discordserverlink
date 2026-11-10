@@ -82,9 +82,16 @@ export default async function HomePage() {
   try {
     const [dbFeatured, dbRecent, dbCategories, totalStats, allBlogPosts] =
       await Promise.all([
-        // 1. Featured servers
+        // 1. Featured servers (active promotions or permanent featured)
         prisma.server.findMany({
-          where: { status: "APPROVED", isFeatured: true },
+          where: {
+            status: "APPROVED",
+            isFeatured: true,
+            OR: [
+              { featuredUntil: null },
+              { featuredUntil: { gt: new Date() } },
+            ],
+          },
           orderBy: { lastBumpedAt: "desc" },
           take: 6,
         }),

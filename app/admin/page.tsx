@@ -42,6 +42,7 @@ export default async function AdminPage() {
   let deviceStats: any[] = [];
   let recentVisitorLogs: any[] = [];
   let blogPosts: any[] = [];
+  let promotions: any[] = [];
 
   try {
     const results = await Promise.all([
@@ -102,6 +103,32 @@ export default async function AdminPage() {
       prisma.pageView.groupBy({ by: ["device"], _count: { device: true } }),
       prisma.pageView.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
       getAllPosts(),
+      prisma.promotionRequest.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          server: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              iconUrl: true,
+              isFeatured: true,
+              featuredUntil: true,
+              promotionPlan: true,
+              memberCount: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              username: true,
+              image: true,
+            },
+          },
+        },
+      }),
     ]);
 
     servers = results[0];
@@ -121,6 +148,7 @@ export default async function AdminPage() {
     deviceStats = results[14];
     recentVisitorLogs = results[15];
     blogPosts = results[16];
+    promotions = results[17] || [];
   } catch (err) {
     console.warn("Admin prefetch warning (using fallback data):", err);
     try {
@@ -177,6 +205,7 @@ export default async function AdminPage() {
       initialLogs={auditLogs}
       initialVideos={videosList}
       initialBlogPosts={blogPosts}
+      initialPromotions={promotions}
       stats={{
         totalServers,
         pendingServers,

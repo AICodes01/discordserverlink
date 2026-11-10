@@ -1,10 +1,24 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { DiscordBot } from "@/lib/botsData";
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || !(session.user as any).id) {
+      return NextResponse.json(
+        { error: "Authentication required. You must be signed in to submit a Discord bot." },
+        { status: 401 }
+      );
+    }
+
+    const ownerId = (session.user as any).id;
+    const ownerName = session.user.name || "Anonymous";
+    const ownerEmail = session.user.email || "";
+
     const body = await req.json();
 
     const name = (body.name || "").trim();
@@ -130,6 +144,10 @@ export async function POST(req: Request) {
       websiteUrl,
       isVerified: false,
       features,
+      ownerId,
+      ownerEmail,
+      ownerName,
+      createdAt: new Date().toISOString(),
     };
 
     currentBots.unshift(newBot);

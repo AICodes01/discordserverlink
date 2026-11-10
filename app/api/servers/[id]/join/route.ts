@@ -7,25 +7,34 @@ export async function POST(
 ) {
   try {
     const { id } = params;
+    await prisma.server.update({
+      where: { id },
+      data: { joinsCount: { increment: 1 } },
+    });
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
     const server = await prisma.server.update({
       where: { id },
-      data: {
-        joinsCount: { increment: 1 },
-      },
-      select: {
-        inviteUrl: true,
-      },
+      data: { joinsCount: { increment: 1 } },
+      select: { inviteUrl: true },
     });
 
-    return NextResponse.json({
-      success: true,
-      inviteUrl: server.inviteUrl,
-    });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Server not found" },
-      { status: 404 }
-    );
+    if (server?.inviteUrl) {
+      return NextResponse.redirect(server.inviteUrl, { status: 302 });
+    }
+
+    return NextResponse.redirect(new URL("/", req.url));
+  } catch (err: any) {
+    return NextResponse.redirect(new URL("/", req.url));
   }
 }

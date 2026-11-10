@@ -89,6 +89,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    const ownerId = (session?.user as any)?.id;
+    if (!ownerId) {
+      return NextResponse.json(
+        { error: "Authentication required. You must be signed in to submit a Discord server." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
 
     const {
@@ -129,22 +137,6 @@ export async function POST(req: NextRequest) {
             slug: existingGuild.slug,
           },
           { status: 409 }
-        );
-      }
-    }
-
-    // Determine owner
-    let ownerId = (session?.user as any)?.id;
-    if (!ownerId) {
-      // Find default admin or first user if guest submission allowed
-      const defaultUser = await prisma.user.findFirst({
-        orderBy: { createdAt: "asc" },
-      });
-      ownerId = defaultUser?.id;
-      if (!ownerId) {
-        return NextResponse.json(
-          { error: "Authentication required to add a server" },
-          { status: 401 }
         );
       }
     }

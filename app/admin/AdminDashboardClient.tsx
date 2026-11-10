@@ -55,6 +55,7 @@ interface AdminProps {
   initialLogs: any[];
   initialVideos?: any[];
   initialBlogPosts?: any[];
+  initialPromotions?: any[];
   stats: {
     totalServers: number;
     pendingServers: number;
@@ -87,12 +88,13 @@ export default function AdminDashboardClient({
   initialLogs,
   initialVideos = [],
   initialBlogPosts = [],
+  initialPromotions = [],
   stats,
   analytics,
   currentAdminRole,
 }: AdminProps) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "stats" | "ads" | "servers" | "categories" | "blog" | "users" | "settings" | "logs"
+    "overview" | "stats" | "ads" | "servers" | "categories" | "blog" | "users" | "settings" | "logs" | "promotions"
   >("overview");
 
   // State
@@ -103,6 +105,12 @@ export default function AdminDashboardClient({
   const [auditLogs, setAuditLogs] = useState(initialLogs);
   const [videos, setVideos] = useState<any[]>(initialVideos);
   const [blogPosts, setBlogPosts] = useState<any[]>(initialBlogPosts);
+  const [promotions, setPromotions] = useState<any[]>(initialPromotions);
+
+  // Promotion states & filters
+  const [promotionFilter, setPromotionFilter] = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED">("ALL");
+  const [promotionSearch, setPromotionSearch] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   // Filters & Pagination
   const [serverSearch, setServerSearch] = useState("");
@@ -462,6 +470,96 @@ export default function AdminDashboardClient({
     return { label: "Public Page", color: "text-zinc-400 bg-zinc-800 border-zinc-700" };
   };
 
+  // Promotions Management Logic
+  const handlePromotionAction = async (
+    id: string,
+    action: "approve" | "reject",
+    customDuration?: number
+  ) => {
+    let adminNotes = "";
+    if (action === "reject") {
+      const reason = window.prompt("Reason for rejection (optional):");
+      if (reason === null) return; // cancelled
+      adminNotes = reason;
+    } else {
+      const confirmApprove = window.confirm(
+        "Confirm payment received? This will activate Featured status immediately for this server on the public website."
+      );
+      if (!confirmApprove) return;
+    }
+
+    setActionLoadingId(id);
+    try {
+      const res = await fetch(`/api/admin/promotions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          adminNotes,
+          durationDays: customDuration,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message || `Promotion ${action}d successfully!`);
+        setPromotions((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, ...data.promotion } : p))
+        );
+        if (action === "approve" && data.server) {
+          setServers((prev) =>
+            prev.map((s) => (s.id === data.server.id ? { ...s, ...data.server } : s))
+          );
+        }
+      } else {
+        showToast(data.error || "Failed to update promotion", "error");
+      }
+    } catch {
+      showToast("Network error updating promotion", "error");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDeletePromotion = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this promotion record?")) return;
+    try {
+      const res = await fetch(`/api/admin/promotions/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setPromotions((prev) => prev.filter((p) => p.id !== id));
+        showToast("Promotion record deleted.");
+      } else {
+        showToast("Failed to delete record.", "error");
+      }
+    } catch {
+      showToast("Network error.", "error");
+    }
+  };
+
+  const getDaysRemaining = (dateString?: string | null) => {
+    if (!dateString) return 0;
+    const target = new Date(dateString).getTime();
+    const diff = target - Date.now();
+    if (diff <= 0) return 0;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  const pendingPromotionsCount = promotions.filter((p) => p.status === "PENDING").length;
+
+  const filteredPromotions = promotions.filter((p) => {
+    const matchesFilter =
+      promotionFilter === "ALL" ? true : p.status === promotionFilter;
+    const q = promotionSearch.toLowerCase();
+    const matchesSearch =
+      !q ||
+      p.server?.name?.toLowerCase().includes(q) ||
+      p.user?.name?.toLowerCase().includes(q) ||
+      p.user?.email?.toLowerCase().includes(q) ||
+      p.contactInfo?.toLowerCase().includes(q);
+    return matchesFilter && matchesSearch;
+  });
+
   return (
     <div className="min-h-screen bg-[#0a0c10] text-zinc-100 flex flex-col md:flex-row">
       {/* Toast Notification */}
@@ -569,6 +667,30 @@ export default function AdminDashboardClient({
               <span className="text-[10px] text-zinc-500 font-mono">
                 {servers.length}
               </span>
+            </button>
+
+            {/* TAB: PROMOTIONS */}
+            <button
+              onClick={() => setActiveTab("promotions")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+                activeTab === "promotions"
+                  ? "bg-discord-blurple text-white shadow-glow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>Promotions & Billing</span>
+              </div>
+              {pendingPromotionsCount > 0 ? (
+                <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-zinc-950 font-black text-[10px] animate-pulse">
+                  {pendingPromotionsCount}
+                </span>
+              ) : (
+                <span className="text-[10px] text-zinc-500 font-mono">
+                  {promotions.length}
+                </span>
+              )}
             </button>
 
             <button
@@ -734,6 +856,35 @@ export default function AdminDashboardClient({
                 </div>
               </div>
             </div>
+
+            {/* Pending Promotions Banner if any */}
+            {pendingPromotionsCount > 0 && (
+              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 flex-shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>{pendingPromotionsCount} Server Promotion Request{pendingPromotionsCount > 1 ? "s" : ""} Pending Review</span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-black uppercase tracking-wider">
+                        Action Required
+                      </span>
+                    </h4>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Server owners requested featured promotions ($5/mo or $10/3mo). Connect manually, receive payment, and activate.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab("promotions")}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition flex items-center justify-center gap-1.5 flex-shrink-0 shadow-sm"
+                >
+                  <span>Review Requests</span>
+                  <span>→</span>
+                </button>
+              </div>
+            )}
 
             {/* Quick Actions & Recent Servers */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2528,6 +2679,293 @@ export default function AdminDashboardClient({
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* ==================== TAB: PROMOTIONS & BILLING ==================== */}
+        {activeTab === "promotions" && (
+          <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2.5">
+                  <Sparkles className="w-7 h-7 text-amber-400" />
+                  <span>Server Promotions & Billing</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+                  Review paid server feature requests, verify manual payments ($5/mo, $10/3mo), and toggle featured promotion tiers.
+                </p>
+              </div>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-zinc-900/70 border border-zinc-800">
+                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  Pending Approvals
+                </span>
+                <p className="text-2xl font-black text-amber-400 mt-1">
+                  {pendingPromotionsCount}
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  Awaiting manual payment confirmation
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-zinc-900/70 border border-zinc-800">
+                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  Active Featured Servers
+                </span>
+                <p className="text-2xl font-black text-emerald-400 mt-1">
+                  {servers.filter((s) => s.isFeatured).length}
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  Currently featured on homepage & lists
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-zinc-900/70 border border-zinc-800">
+                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  Total Requests
+                </span>
+                <p className="text-2xl font-black text-white mt-1">
+                  {promotions.length}
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  All-time promotion inquiries
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-zinc-900/70 border border-zinc-800">
+                <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  Total Revenue
+                </span>
+                <p className="text-2xl font-black text-discord-blurple mt-1">
+                  ${promotions
+                    .filter((p: any) => p.status === "APPROVED")
+                    .reduce((acc: number, p: any) => acc + (p.amount || (p.plan === "3_months" ? 10 : 5)), 0)}
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  From approved featured plans
+                </p>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-1.5 flex-wrap w-full md:w-auto">
+                {(["ALL", "PENDING", "APPROVED", "REJECTED"] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setPromotionFilter(filter)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                      promotionFilter === filter
+                        ? "bg-discord-blurple text-white shadow-glow-sm"
+                        : "bg-zinc-800/80 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {filter === "ALL" && `All (${promotions.length})`}
+                    {filter === "PENDING" && `Pending (${pendingPromotionsCount})`}
+                    {filter === "APPROVED" && `Approved (${promotions.filter((p: any) => p.status === "APPROVED").length})`}
+                    {filter === "REJECTED" && `Rejected (${promotions.filter((p: any) => p.status === "REJECTED").length})`}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative w-full md:w-64">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search server, user, contact..."
+                  value={promotionSearch}
+                  onChange={(e) => setPromotionSearch(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-discord-blurple"
+                />
+              </div>
+            </div>
+
+            {/* Promotions Table */}
+            <div className="rounded-2xl border border-zinc-800 overflow-hidden bg-zinc-950/60 shadow-xl">
+              {filteredPromotions.length === 0 ? (
+                <div className="p-12 text-center text-zinc-500">
+                  <Sparkles className="w-10 h-10 text-zinc-700 mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-zinc-400">
+                    No promotion requests found matching your filter.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-zinc-900/90 text-zinc-400 uppercase tracking-wider text-[10px] border-b border-zinc-800">
+                      <tr>
+                        <th className="py-3 px-4">Server</th>
+                        <th className="py-3 px-4">Requester & Contact</th>
+                        <th className="py-3 px-4">Plan & Fee</th>
+                        <th className="py-3 px-4">Status & Countdown</th>
+                        <th className="py-3 px-4">Requested Date</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60">
+                      {filteredPromotions.map((req: any) => {
+                        const isPending = req.status === "PENDING";
+                        const isApproved = req.status === "APPROVED";
+                        const isRejected = req.status === "REJECTED";
+                        const daysLeft = req.expiresAt ? getDaysRemaining(req.expiresAt) : 0;
+                        const isExpired = isApproved && daysLeft === 0;
+
+                        return (
+                          <tr key={req.id} className="hover:bg-zinc-900/40 transition">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                {req.server?.iconUrl ? (
+                                  <img
+                                    src={req.server.iconUrl}
+                                    alt={req.server.name || "Server"}
+                                    className="w-9 h-9 rounded-xl object-cover bg-zinc-800"
+                                  />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 font-bold text-xs">
+                                    {(req.server?.name || "SV").slice(0, 2).toUpperCase()}
+                                  </div>
+                                )}
+                                <div>
+                                  <Link
+                                    href={req.server?.slug ? `/server/${req.server.slug}` : "#"}
+                                    target="_blank"
+                                    className="font-bold text-white hover:text-discord-blurple flex items-center gap-1 group"
+                                  >
+                                    <span>{req.server?.name || "Unknown Server"}</span>
+                                    <ExternalLink className="w-3 h-3 text-zinc-500 group-hover:text-discord-blurple" />
+                                  </Link>
+                                  <div className="text-[11px] text-zinc-500 font-mono flex items-center gap-2 mt-0.5">
+                                    <span>{req.server?.memberCount?.toLocaleString() || 0} members</span>
+                                    {req.server?.isFeatured && (
+                                      <span className="text-amber-400 font-semibold flex items-center gap-0.5">
+                                        <Star className="w-2.5 h-2.5 fill-amber-400" />
+                                        Featured
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <div className="font-semibold text-zinc-200">
+                                {req.user?.name || req.user?.username || "Discord User"}
+                              </div>
+                              <div className="text-[11px] text-zinc-400 mt-0.5 font-mono">
+                                {req.user?.email}
+                              </div>
+                              <div className="mt-1 flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 font-mono text-[11px] border border-zinc-700/60 select-all">
+                                  💬 {req.contactInfo}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <span className="font-black text-emerald-400 text-sm">
+                                ${req.amount || (req.plan === "3_months" ? 10 : 5)}
+                              </span>
+                              <div className="text-[11px] text-zinc-400 font-semibold">
+                                {req.plan === "3_months" ? "3 Months (90 Days)" : "1 Month (30 Days)"}
+                              </div>
+                              {req.notes && (
+                                <div className="text-[10px] text-zinc-500 italic mt-0.5 truncate max-w-[180px]" title={req.notes}>
+                                  Note: {req.notes}
+                                </div>
+                              )}
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              {isPending && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                  Pending Payment
+                                </span>
+                              )}
+                              {isApproved && !isExpired && (
+                                <div>
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    Active Featured
+                                  </span>
+                                  <div className="text-[11px] text-emerald-400 font-bold mt-1">
+                                    ⏳ {daysLeft} {daysLeft === 1 ? "day" : "days"} remaining
+                                  </div>
+                                </div>
+                              )}
+                              {isExpired && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                  Plan Expired
+                                </span>
+                              )}
+                              {isRejected && (
+                                <div>
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                                    <XCircle className="w-3.5 h-3.5" />
+                                    Rejected
+                                  </span>
+                                  {req.adminNotes && (
+                                    <p className="text-[10px] text-zinc-500 mt-1 truncate max-w-[150px]" title={req.adminNotes}>
+                                      {req.adminNotes}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+
+                            <td className="py-3.5 px-4 text-zinc-400 text-[11px]">
+                              <div>{new Date(req.createdAt).toLocaleDateString()}</div>
+                              <div className="text-zinc-500 text-[10px]">
+                                {new Date(req.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {isPending && (
+                                  <>
+                                    <button
+                                      disabled={actionLoadingId === req.id}
+                                      onClick={() => handlePromotionAction(req.id, "approve")}
+                                      className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition flex items-center gap-1 shadow-sm disabled:opacity-50"
+                                      title="Accept Payment & Activate Server as Featured"
+                                    >
+                                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                      <span>Accept & Activate</span>
+                                    </button>
+                                    <button
+                                      disabled={actionLoadingId === req.id}
+                                      onClick={() => handlePromotionAction(req.id, "reject")}
+                                      className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 text-xs font-semibold transition border border-zinc-700 disabled:opacity-50"
+                                      title="Reject Request"
+                                    >
+                                      <XCircle className="w-3.5 h-3.5" />
+                                      <span className="hidden sm:inline">Reject</span>
+                                    </button>
+                                  </>
+                                )}
+                                {!isPending && (
+                                  <button
+                                    onClick={() => handleDeletePromotion(req.id)}
+                                    className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition"
+                                    title="Delete Record"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -18,6 +19,7 @@ import {
   AlertCircle,
   ExternalLink,
   Users,
+  Lock,
 } from "lucide-react";
 import FAQAccordion, { FAQItem } from "@/components/FAQAccordion";
 import { generateFAQSchema } from "@/lib/seo";
@@ -52,6 +54,7 @@ const ADD_SERVER_FAQS: FAQItem[] = [
 
 export default function AddServerPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [inviteUrl, setInviteUrl] = useState("");
   const [fetchingDiscord, setFetchingDiscord] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -367,7 +370,27 @@ export default function AddServerPage() {
         </div>
       </div>
 
-      {/* Main Submission Form */}
+      {/* Main Submission Form or Login Barrier */}
+      {status === "unauthenticated" ? (
+        <div className="rounded-3xl bg-zinc-900/90 border border-zinc-800 p-8 sm:p-12 text-center space-y-6 shadow-2xl backdrop-blur-xl">
+          <div className="w-16 h-16 rounded-3xl bg-discord-blurple/10 border border-discord-blurple/20 text-discord-blurple flex items-center justify-center mx-auto shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2 max-w-md mx-auto">
+            <h2 className="text-2xl font-black text-white">Sign In Required to Submit Server</h2>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              Only logged-in users can list a Discord server. Signing in links your server to your user dashboard so you can view live analytics (views, bumps, join clicks) and manage or promote it.
+            </p>
+          </div>
+          <Link
+            href="/login?callbackUrl=/servers/new"
+            className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-discord-blurple hover:bg-discord-hover text-white font-bold text-sm shadow-glow hover:shadow-glow-sm transition hover:scale-105"
+          >
+            <span>Sign In with Discord to Continue</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      ) : (
       <div className="rounded-3xl bg-zinc-900/80 border border-zinc-800 p-6 sm:p-10 shadow-2xl space-y-8">
         {/* Step 1: Discord Invite Auto-Fetch */}
         <div className="p-5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-4">
@@ -567,6 +590,7 @@ export default function AddServerPage() {
           </div>
         </form>
       </div>
+      )}
 
       {/* ========================================================= */}
       {/* RULES, BENEFITS, WHY DISCORDSERVERLINK, CONCLUSION & DISCLAIMER */}

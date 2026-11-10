@@ -20,6 +20,7 @@ interface ServerCardProps {
     isPartnered?: boolean;
     bumpsCount?: number;
     lastBumpedAt?: Date | string;
+    inviteUrl?: string;
   };
 }
 
@@ -171,7 +172,7 @@ export default function ServerCard({ server }: ServerCardProps) {
             View Server
           </Link>
           <a
-            href={`/api/servers/${server.id}/join`}
+            href={server.inviteUrl || `/api/servers/${server.id}/join`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleJoinClick}

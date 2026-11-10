@@ -19,6 +19,10 @@ export interface DiscordBot {
   websiteUrl: string;
   isVerified: boolean;
   features: string[];
+  ownerId?: string;
+  ownerEmail?: string;
+  ownerName?: string;
+  createdAt?: string;
 }
 
 export const BOT_CATEGORIES = [
