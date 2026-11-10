@@ -409,7 +409,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
             <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
               <tr>
                 <td className="py-2 px-4 text-zinc-400">Total Listed Servers</td>
-                <td className="py-2 px-4 text-right font-bold text-white">{totalCount.toLocaleString()}+ Verified Communities</td>
+                <td className="py-2 px-4 text-right font-bold text-white">{totalCount.toLocaleString("en-US")}+ Verified Communities</td>
               </tr>
               <tr>
                 <td className="py-2 px-4 text-zinc-400">Invite Link Type</td>
@@ -487,7 +487,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
             <Layers className="w-4 h-4 text-discord-blurple" />
             <span>All Servers</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-zinc-800 text-zinc-400 group-hover:text-zinc-200">
-              {globalTotal.toLocaleString()}
+              {globalTotal.toLocaleString("en-US")}
             </span>
           </Link>
 
@@ -514,7 +514,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
                       : "bg-zinc-800 text-zinc-400 group-hover:text-zinc-200"
                   }`}
                 >
-                  {count.toLocaleString()}
+                  {count.toLocaleString("en-US")}
                 </span>
               </Link>
             );
@@ -527,14 +527,14 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-white">
-              Active {category.name} Communities ({totalCount.toLocaleString()})
+              Active {category.name} Communities ({totalCount.toLocaleString("en-US")})
             </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
               Page {page} of {Math.max(1, totalPages)} • Sorted by Live Bump Velocity
             </p>
           </div>
           <span className="text-xs text-zinc-400 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl self-start sm:self-auto">
-            Showing {servers.length} of {totalCount.toLocaleString()} servers
+            Showing {servers.length} of {totalCount.toLocaleString("en-US")} servers
           </span>
         </div>
 

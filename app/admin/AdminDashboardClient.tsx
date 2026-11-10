@@ -481,7 +481,7 @@ export default function AdminDashboardClient({
                 <span>Stats & Analytics</span>
               </div>
               <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">
-                {viewsToday.toLocaleString()}
+                {viewsToday.toLocaleString('en-US')}
               </span>
             </button>
 
@@ -649,13 +649,13 @@ export default function AdminDashboardClient({
                   <BarChart3 className="w-4 h-4 text-emerald-400" />
                 </div>
                 <p className="text-3xl font-black text-emerald-400 mt-2">
-                  {viewsToday.toLocaleString()}
+                  {viewsToday.toLocaleString('en-US')}
                 </p>
                 <div className="mt-2 text-[11px] text-zinc-400 flex items-center gap-1.5">
                   <span className={`font-bold ${isPositiveGrowth ? "text-emerald-400" : "text-red-400"}`}>
                     {isPositiveGrowth ? `+${pctGrowth}%` : `${pctGrowth}%`}
                   </span>
-                  <span>vs yesterday ({viewsYesterday.toLocaleString()})</span>
+                  <span>vs yesterday ({viewsYesterday.toLocaleString('en-US')})</span>
                 </div>
               </div>
 
@@ -664,7 +664,7 @@ export default function AdminDashboardClient({
                   Members Indexed
                 </span>
                 <p className="text-3xl font-black text-discord-blurple mt-2">
-                  {stats.totalMembers.toLocaleString()}
+                  {stats.totalMembers.toLocaleString('en-US')}
                 </p>
                 <div className="mt-2 text-[11px] text-zinc-400">
                   Across all community listings
@@ -772,7 +772,7 @@ export default function AdminDashboardClient({
                             {server.name}
                           </p>
                           <p className="text-[11px] text-zinc-400 truncate">
-                            /{server.categorySlug} • {server.memberCount?.toLocaleString()} members
+                            /{server.categorySlug} • {server.memberCount?.toLocaleString('en-US')} members
                           </p>
                         </div>
                       </div>
@@ -844,7 +844,7 @@ export default function AdminDashboardClient({
                   </div>
                 </div>
                 <p className="text-4xl font-black text-white mt-3">
-                  {viewsToday.toLocaleString()}
+                  {viewsToday.toLocaleString('en-US')}
                 </p>
                 <div className="mt-3 flex items-center gap-2 text-xs">
                   <span className={`px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 ${
@@ -868,7 +868,7 @@ export default function AdminDashboardClient({
                   </div>
                 </div>
                 <p className="text-4xl font-black text-zinc-200 mt-3">
-                  {viewsYesterday.toLocaleString()}
+                  {viewsYesterday.toLocaleString('en-US')}
                 </p>
                 <p className="mt-3 text-[11px] text-zinc-500 font-medium">
                   Full 24-hour baseline completed
@@ -884,7 +884,7 @@ export default function AdminDashboardClient({
                   </div>
                 </div>
                 <p className="text-4xl font-black text-discord-blurple mt-3">
-                  {(analytics?.totalViews || 0).toLocaleString()}
+                  {(analytics?.totalViews || 0).toLocaleString('en-US')}
                 </p>
                 <p className="mt-3 text-[11px] text-zinc-500 font-medium">
                   Cumulative recorded directory visits
@@ -903,7 +903,7 @@ export default function AdminDashboardClient({
                   {videos.length}
                 </p>
                 <p className="mt-3 text-[11px] text-zinc-500 font-medium">
-                  {videos.reduce((a, b) => a + (b.viewsCount || 0), 0).toLocaleString()} total video impressions
+                  {videos.reduce((a, b) => a + (b.viewsCount || 0), 0).toLocaleString('en-US')} total video impressions
                 </p>
               </div>
             </div>
@@ -1019,15 +1019,15 @@ export default function AdminDashboardClient({
                               </td>
 
                               <td className="py-3 px-4 text-right font-mono font-black text-emerald-400">
-                                {item.today.toLocaleString()}
+                                {item.today.toLocaleString('en-US')}
                               </td>
 
                               <td className="py-3 px-4 text-right font-mono text-zinc-300">
-                                {item.yesterday.toLocaleString()}
+                                {item.yesterday.toLocaleString('en-US')}
                               </td>
 
                               <td className="py-3 px-4 text-right font-mono font-bold text-discord-blurple">
-                                {item.allTime.toLocaleString()}
+                                {item.allTime.toLocaleString('en-US')}
                               </td>
 
                               <td className="py-3 px-4 min-w-[140px]">
@@ -1091,7 +1091,7 @@ export default function AdminDashboardClient({
                         <span>Desktop</span>
                       </span>
                       <span className="font-mono font-bold text-white">
-                        {(analytics?.deviceStats?.desktop || 0).toLocaleString()}
+                        {(analytics?.deviceStats?.desktop || 0).toLocaleString('en-US')}
                       </span>
                     </div>
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
@@ -1116,7 +1116,7 @@ export default function AdminDashboardClient({
                         <span>Mobile</span>
                       </span>
                       <span className="font-mono font-bold text-white">
-                        {(analytics?.deviceStats?.mobile || 0).toLocaleString()}
+                        {(analytics?.deviceStats?.mobile || 0).toLocaleString('en-US')}
                       </span>
                     </div>
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
@@ -1141,7 +1141,7 @@ export default function AdminDashboardClient({
                         <span>Tablet</span>
                       </span>
                       <span className="font-mono font-bold text-white">
-                        {(analytics?.deviceStats?.tablet || 0).toLocaleString()}
+                        {(analytics?.deviceStats?.tablet || 0).toLocaleString('en-US')}
                       </span>
                     </div>
                     <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
@@ -1243,7 +1243,7 @@ export default function AdminDashboardClient({
                             {vid.platform}
                           </span>
                           <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-black/80 text-zinc-300">
-                            {vid.viewsCount?.toLocaleString()} views
+                            {vid.viewsCount?.toLocaleString('en-US')} views
                           </span>
                         </div>
                       )}
@@ -1790,7 +1790,7 @@ export default function AdminDashboardClient({
                         </td>
 
                         <td className="py-3 px-4 font-mono text-zinc-300">
-                          {server.memberCount?.toLocaleString() || 0}
+                          {server.memberCount?.toLocaleString('en-US') || 0}
                         </td>
 
                         <td className="py-3 px-4">
@@ -2296,7 +2296,7 @@ export default function AdminDashboardClient({
                         {log.details || "-"}
                       </td>
                       <td className="py-3 px-4 text-zinc-500 text-[11px]">
-                        {new Date(log.createdAt).toLocaleString()}
+                        {new Date(log.createdAt).toLocaleString('en-US')}
                       </td>
                     </tr>
                   ))}

@@ -161,9 +161,9 @@ export default async function HomePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-xs font-semibold text-zinc-300 mb-6 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-xs font-semibold text-zinc-300 mb-6 shadow-sm" suppressHydrationWarning>
             <span className="w-2 h-2 rounded-full bg-discord-green animate-ping" />
-            <span>Over {totalMembers.toLocaleString()} Discord members discovered</span>
+            <span>Over {totalMembers.toLocaleString("en-US")} Discord members discovered</span>
           </div>
 
           {/* Heading */}
@@ -175,20 +175,20 @@ export default async function HomePage() {
           </h1>
 
           {/* Subheading */}
-          <p className="mt-5 text-base sm:text-lg text-zinc-400 max-w-3xl mx-auto leading-relaxed">
+          <p className="mt-5 text-base sm:text-lg text-zinc-400 max-w-3xl mx-auto leading-relaxed" suppressHydrationWarning>
             Welcome to{" "}
             <span className="font-semibold text-zinc-200">discordserverlink.com</span> — the
             ultra-fast, 100% free Discord server list featuring over{" "}
             <span className="text-zinc-200 font-semibold">
-              {totalServers.toLocaleString()}+
+              {totalServers.toLocaleString("en-US")}+
             </span>{" "}
             listed servers,{" "}
             <span className="text-zinc-200 font-semibold">
-              {totalMembers.toLocaleString()}+
+              {totalMembers.toLocaleString("en-US")}+
             </span>{" "}
             total members, and{" "}
             <span className="text-zinc-200 font-semibold">
-              {totalBumps.toLocaleString()}+
+              {totalBumps.toLocaleString("en-US")}+
             </span>{" "}
             bumps. Find active voice chats, gaming squads, anime hubs, and software developer circles.
           </p>

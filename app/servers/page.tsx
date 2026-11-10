@@ -178,8 +178,8 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
                 ? `Latest ${activeCategoryObj.name} Discord Server Join Links 2026`
                 : "Explore Discord Servers"}
             </h1>
-            <p className="text-sm text-zinc-400 mt-1">
-              Browse {totalCount.toLocaleString()} {activeCategoryObj ? activeCategoryObj.name : "community"} servers listed on discordserverlink.com
+            <p className="text-sm text-zinc-400 mt-1" suppressHydrationWarning>
+              Browse {totalCount.toLocaleString("en-US")} {activeCategoryObj ? activeCategoryObj.name : "community"} servers listed on discordserverlink.com
             </p>
           </div>
           <Link
@@ -212,10 +212,10 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
                 defaultValue={category}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-discord-blurple"
               >
-                <option value="">All Categories ({allServersCount.toLocaleString()})</option>
+                <option value="">All Categories ({allServersCount.toLocaleString("en-US")})</option>
                 {categories.map((c) => (
                   <option key={c.slug} value={c.slug}>
-                    {c.name} ({countMap[c.slug]?.toLocaleString() || 0})
+                    {c.name} ({countMap[c.slug]?.toLocaleString("en-US") || 0})
                   </option>
                 ))}
               </select>

@@ -103,12 +103,16 @@ export default function ServerCard({ server }: ServerCardProps) {
           <div className="flex items-center gap-3 text-xs font-semibold text-zinc-400 bg-zinc-950/70 border border-zinc-800/80 px-2.5 py-1.5 rounded-xl">
             <span className="flex items-center gap-1 text-discord-green" title="Online members">
               <span className="w-2 h-2 rounded-full bg-discord-green animate-pulse" />
-              {server.onlineCount ? server.onlineCount.toLocaleString() : "Active"}
+              <span suppressHydrationWarning>
+                {server.onlineCount ? server.onlineCount.toLocaleString("en-US") : "Active"}
+              </span>
             </span>
             <span className="text-zinc-600">|</span>
             <span className="flex items-center gap-1 text-zinc-300" title="Total members">
               <Users className="w-3 h-3 text-zinc-400" />
-              {server.memberCount ? server.memberCount.toLocaleString() : "100+"}
+              <span suppressHydrationWarning>
+                {server.memberCount ? server.memberCount.toLocaleString("en-US") : "100+"}
+              </span>
             </span>
           </div>
         </div>

@@ -193,7 +193,7 @@ export default function SnowflakeConverterPage() {
 
             <div className="flex items-center gap-2">
               <span className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-bold">
-                {decoded.yearsAgo} years old ({decoded.daysAgo.toLocaleString()} days ago)
+                {decoded.yearsAgo} years old ({decoded.daysAgo.toLocaleString("en-US")} days ago)
               </span>
             </div>
           </div>

@@ -132,9 +132,9 @@ export default function BotDetailPage({ params }: BotDetailPageProps) {
                   <span>{bot.formattedServers} Servers</span>
                 </span>
                 <span className="text-zinc-600">•</span>
-                <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                <span className="flex items-center gap-1.5 text-amber-400 font-semibold" suppressHydrationWarning>
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span>{bot.rating} ({bot.votesCount.toLocaleString()} votes)</span>
+                  <span>{bot.rating} ({bot.votesCount.toLocaleString("en-US")} votes)</span>
                 </span>
                 <span className="text-zinc-600">•</span>
                 <span className="flex items-center gap-1 font-mono text-xs bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-md border border-zinc-700">
@@ -232,9 +232,9 @@ export default function BotDetailPage({ params }: BotDetailPageProps) {
             </h3>
 
             <div className="space-y-3.5 text-xs">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between" suppressHydrationWarning>
                 <span className="text-zinc-400">Total Servers</span>
-                <span className="font-semibold text-white">{bot.serverCount.toLocaleString()}</span>
+                <span className="font-semibold text-white">{bot.serverCount.toLocaleString("en-US")}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Default Prefix</span>

@@ -165,13 +165,13 @@ export default async function TagDetailPage({ params, searchParams }: TagPagePro
           #{tagName} Discord Servers
         </h1>
         <p className="mt-3 text-sm sm:text-base text-zinc-300 max-w-3xl leading-relaxed">
-          Explore {totalCount.toLocaleString()} active communities tagged with <strong className="text-white">#{tagName}</strong>. Find teammates, join discussions, and chat with passionate fans on discordserverlink.com.
+          Explore {totalCount.toLocaleString("en-US")} active communities tagged with <strong className="text-white">#{tagName}</strong>. Find teammates, join discussions, and chat with passionate fans on discordserverlink.com.
         </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold text-zinc-400 pt-4 border-t border-zinc-800/80">
           <span className="flex items-center gap-1.5 text-discord-green bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800">
             <span className="w-2 h-2 rounded-full bg-discord-green animate-pulse" />
-            {totalCount.toLocaleString()} Listed Servers
+            {totalCount.toLocaleString("en-US")} Listed Servers
           </span>
           <span className="flex items-center gap-1.5 text-zinc-300 bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800">
             <TrendingUp className="w-3.5 h-3.5 text-discord-yellow" />
@@ -189,14 +189,14 @@ export default async function TagDetailPage({ params, searchParams }: TagPagePro
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-white">
-              Top Communities for #{tagName} ({totalCount.toLocaleString()})
+              Top Communities for #{tagName} ({totalCount.toLocaleString("en-US")})
             </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
               Page {page} of {Math.max(1, totalPages)} • Real-time Bump Leaderboard
             </p>
           </div>
           <span className="text-xs text-zinc-400 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl self-start sm:self-auto">
-            Showing {servers.length} of {totalCount.toLocaleString()} servers
+            Showing {servers.length} of {totalCount.toLocaleString("en-US")} servers
           </span>
         </div>
 

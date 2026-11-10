@@ -160,10 +160,10 @@ export default function Pagination({
 
       {/* Item summary counter */}
       {totalItems !== undefined && (
-        <p className="text-xs text-zinc-500 font-medium">
-          Showing <span className="text-zinc-300 font-semibold">{startItem.toLocaleString()}</span> to{" "}
-          <span className="text-zinc-300 font-semibold">{endItem.toLocaleString()}</span> of{" "}
-          <span className="text-zinc-200 font-bold">{totalItems.toLocaleString()}</span> servers
+        <p className="text-xs text-zinc-500 font-medium" suppressHydrationWarning>
+          Showing <span className="text-zinc-300 font-semibold">{startItem.toLocaleString("en-US")}</span> to{" "}
+          <span className="text-zinc-300 font-semibold">{endItem.toLocaleString("en-US")}</span> of{" "}
+          <span className="text-zinc-200 font-bold">{totalItems.toLocaleString("en-US")}</span> servers
         </p>
       )}
     </div>

@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: ServerPageProps): Promise<Met
   }
 
   const title = `${server.name} Discord Server - Join Community`;
-  const description = `${server.name} has ${(server.memberCount || 0).toLocaleString()} members. ${server.shortDescription} Join on discordserverlink.com.`;
+  const description = `${server.name} has ${(server.memberCount || 0).toLocaleString("en-US")} members. ${server.shortDescription} Join on discordserverlink.com.`;
 
   const bannerImage = server.bannerUrl || server.iconUrl || "/og-image.png";
 
@@ -300,14 +300,14 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
                 </p>
 
                 {/* Member Metrics Row */}
-                <div className="mt-4 flex items-center flex-wrap gap-4 text-xs font-semibold">
+                <div className="mt-4 flex items-center flex-wrap gap-4 text-xs font-semibold" suppressHydrationWarning>
                   <span className="flex items-center gap-1.5 text-discord-green bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800">
                     <span className="w-2 h-2 rounded-full bg-discord-green animate-pulse" />
-                    {server.onlineCount.toLocaleString()} Online
+                    {server.onlineCount.toLocaleString("en-US")} Online
                   </span>
                   <span className="flex items-center gap-1.5 text-zinc-300 bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800">
                     <Users className="w-3.5 h-3.5 text-zinc-400" />
-                    {server.memberCount.toLocaleString()} Total Members
+                    {server.memberCount.toLocaleString("en-US")} Total Members
                   </span>
                   <span className="flex items-center gap-1 text-amber-400 bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800">
                     <Star className="w-3.5 h-3.5 fill-current" />
@@ -547,10 +547,10 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-2">
+                <div className="flex items-center justify-between py-2" suppressHydrationWarning>
                   <span className="text-zinc-400">Total Joins</span>
                   <span className="font-semibold text-zinc-200">
-                    {server.joinsCount.toLocaleString()}
+                    {server.joinsCount.toLocaleString("en-US")}
                   </span>
                 </div>
               </div>
@@ -584,8 +584,8 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
                         <p className="text-xs font-bold text-zinc-200 group-hover:text-discord-blurple truncate">
                           {s.name}
                         </p>
-                        <p className="text-[11px] text-zinc-500">
-                          {s.memberCount.toLocaleString()} members
+                        <p className="text-[11px] text-zinc-500" suppressHydrationWarning>
+                          {s.memberCount.toLocaleString("en-US")} members
                         </p>
                       </div>
                     </Link>

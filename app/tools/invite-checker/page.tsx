@@ -253,7 +253,7 @@ export default function InviteCheckerPage() {
                   <span>Online Members</span>
                 </span>
                 <p className="text-lg font-black text-white">
-                  {(result.approximate_presence_count || 0).toLocaleString()}
+                  {(result.approximate_presence_count || 0).toLocaleString("en-US")}
                 </p>
               </div>
 
@@ -263,7 +263,7 @@ export default function InviteCheckerPage() {
                   <span>Total Members</span>
                 </span>
                 <p className="text-lg font-black text-white">
-                  {(result.approximate_member_count || 0).toLocaleString()}
+                  {(result.approximate_member_count || 0).toLocaleString("en-US")}
                 </p>
               </div>
 

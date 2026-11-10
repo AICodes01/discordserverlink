@@ -414,7 +414,7 @@ export default function AddServerPage() {
           {name && (
             <div className="flex items-center gap-3 p-3.5 rounded-xl bg-discord-green/10 border border-discord-green/20 text-discord-green text-xs font-semibold">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Loaded &amp; Verified: <strong>{name}</strong> ({memberCount.toLocaleString()} members)</span>
+              <span>Loaded &amp; Verified: <strong>{name}</strong> ({memberCount.toLocaleString("en-US")} members)</span>
             </div>
           )}
         </div>

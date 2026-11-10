@@ -111,9 +111,9 @@ export default function ServerBumpButton({
 
       {/* Bump counter and status pill */}
       <div className="flex items-center gap-2 mt-2 text-xs text-zinc-400">
-        <span className="flex items-center gap-1 font-semibold text-zinc-300">
+        <span className="flex items-center gap-1 font-semibold text-zinc-300" suppressHydrationWarning>
           <Sparkles className="w-3.5 h-3.5 text-discord-yellow" />
-          {bumps.toLocaleString()} total bumps
+          {bumps.toLocaleString("en-US")} total bumps
         </span>
       </div>
 

@@ -135,7 +135,7 @@ export default async function CategoriesPage() {
         </h1>
         <p className="mt-3 text-sm sm:text-base text-zinc-300 max-w-2xl leading-relaxed">
           Select any Discord server category below to view all verified communities, find active voice chats, and join instantly. Over{" "}
-          <span className="text-white font-bold">{totalServers.toLocaleString()}+</span> active Discord servers listed across{" "}
+          <span className="text-white font-bold">{totalServers.toLocaleString("en-US")}+</span> active Discord servers listed across{" "}
           <span className="text-white font-bold">{categories.length}</span> categories.
         </p>
       </div>
@@ -149,7 +149,7 @@ export default async function CategoriesPage() {
               Browse by Category
             </h2>
             <span className="text-xs font-normal text-zinc-500">
-              ({categories.length} categories • {totalServers.toLocaleString()} total servers)
+              ({categories.length} categories • {totalServers.toLocaleString("en-US")} total servers)
             </span>
           </div>
           <Link
@@ -170,7 +170,7 @@ export default async function CategoriesPage() {
             <Layers className="w-4 h-4" />
             <span>All Servers</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/20 text-white">
-              {totalServers.toLocaleString()}
+              {totalServers.toLocaleString("en-US")}
             </span>
           </Link>
 
@@ -188,7 +188,7 @@ export default async function CategoriesPage() {
                 <Icon className="w-4 h-4 text-discord-blurple" />
                 <span>{cat.name}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-zinc-800 text-zinc-400 group-hover:text-zinc-200">
-                  {count.toLocaleString()}
+                  {count.toLocaleString("en-US")}
                 </span>
               </Link>
             );
@@ -214,7 +214,7 @@ export default async function CategoriesPage() {
                     <Icon className="w-6 h-6" />
                   </div>
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-950 border border-zinc-800 text-indigo-300 group-hover:border-discord-blurple/50 group-hover:bg-discord-blurple/10 group-hover:text-white transition-all">
-                    {serverCount.toLocaleString()} {serverCount === 1 ? "Server" : "Servers"}
+                    {serverCount.toLocaleString("en-US")} {serverCount === 1 ? "Server" : "Servers"}
                   </span>
                 </div>
 
@@ -227,7 +227,7 @@ export default async function CategoriesPage() {
               </div>
 
               <div className="mt-6 pt-4 border-t border-zinc-800/60 flex items-center justify-between text-xs font-bold text-discord-blurple group-hover:text-white transition">
-                <span>View All {serverCount.toLocaleString()} {cat.name} Servers</span>
+                <span>View All {serverCount.toLocaleString("en-US")} {cat.name} Servers</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
               </div>
             </Link>
