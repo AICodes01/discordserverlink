@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Server,
@@ -26,7 +26,31 @@ import {
   X,
   Send,
   Loader2,
+  ArrowRight,
+  RefreshCw,
+  Check,
+  Shield,
+  Search,
 } from "lucide-react";
+
+const CATEGORY_OPTIONS = [
+  { slug: "community", name: "Community & Hangout" },
+  { slug: "gaming", name: "Gaming" },
+  { slug: "anime", name: "Anime & Manga" },
+  { slug: "technology", name: "Technology & Coding" },
+  { slug: "music", name: "Music" },
+  { slug: "crypto", name: "Crypto & Trading" },
+  { slug: "art", name: "Art & Design" },
+  { slug: "education", name: "Education & Study" },
+  { slug: "roleplay", name: "Roleplay & Lore" },
+  { slug: "movies-entertainment", name: "Movies & Entertainment" },
+  { slug: "esports-tournaments", name: "eSports & Tournaments" },
+  { slug: "artificial-intelligence", name: "Artificial Inteligence" },
+  { slug: "sports-fitness", name: "Sports & Fitness" },
+  { slug: "movies-television", name: "Movies & Television" },
+  { slug: "podcasts-talk", name: "Podcasts & Talk" },
+  { slug: "memes-humor", name: "Memes & Humor" },
+];
 
 interface DashboardClientProps {
   user: any;
@@ -44,7 +68,28 @@ export default function DashboardClient({
   const [servers, setServers] = useState<any[]>(initialServers);
   const [bots, setBots] = useState<any[]>(initialBots);
   const [promotions, setPromotions] = useState<any[]>(initialPromotions);
-  const [activeTab, setActiveTab] = useState<"servers" | "bots" | "promotions">("servers");
+  const [activeTab, setActiveTab] = useState<"servers" | "discord-guilds" | "bots" | "promotions">("servers");
+
+  // Discord Guilds Sync State
+  const [discordGuilds, setDiscordGuilds] = useState<any[]>([]);
+  const [loadingGuilds, setLoadingGuilds] = useState(false);
+  const [guildsError, setGuildsError] = useState<string | null>(null);
+  const [guildSearch, setGuildSearch] = useState("");
+  const [guildFilter, setGuildFilter] = useState<"all" | "unlisted" | "listed">("all");
+
+  // Quick-Add Server Modal State
+  const [quickAddModalOpen, setQuickAddModalOpen] = useState(false);
+  const [selectedGuildToAdd, setSelectedGuildToAdd] = useState<any>(null);
+  const [quickInviteUrl, setQuickInviteUrl] = useState("");
+  const [quickCategory, setQuickCategory] = useState("community");
+  const [quickShortDesc, setQuickShortDesc] = useState("");
+  const [quickTags, setQuickTags] = useState("");
+  const [isSubmittingServer, setIsSubmittingServer] = useState(false);
+  const [quickAddStatus, setQuickAddStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+    slug?: string;
+  } | null>(null);
 
   // Promotion Modal State
   const [promoteModalOpen, setPromoteModalOpen] = useState(false);
@@ -59,6 +104,100 @@ export default function DashboardClient({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: "server" | "bot"; id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch Discord Guilds
+  const fetchDiscordGuilds = async () => {
+    setLoadingGuilds(true);
+    setGuildsError(null);
+    try {
+      const res = await fetch("/api/dashboard/discord-guilds");
+      const data = await res.json();
+      if (!res.ok) {
+        setGuildsError(data.message || data.error || "Failed to load Discord servers.");
+      } else {
+        setDiscordGuilds(data.guilds || []);
+      }
+    } catch {
+      setGuildsError("Network error fetching Discord servers.");
+    } finally {
+      setLoadingGuilds(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDiscordGuilds();
+  }, []);
+
+  const unlistedGuildsCount = discordGuilds.filter((g) => !g.isListed).length;
+
+  const handleOpenQuickAdd = (guild: any) => {
+    setSelectedGuildToAdd(guild);
+    setQuickInviteUrl("");
+    setQuickShortDesc(`Official Discord community for ${guild.name}. Connect, chat, and hangout with fellow members!`);
+    setQuickTags("community, chat, hangout");
+    setQuickCategory("community");
+    setQuickAddStatus(null);
+    setQuickAddModalOpen(true);
+  };
+
+  const handleQuickAddServer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGuildToAdd || !quickInviteUrl.trim() || !quickShortDesc.trim()) return;
+
+    setIsSubmittingServer(true);
+    setQuickAddStatus(null);
+
+    try {
+      const res = await fetch("/api/servers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: selectedGuildToAdd.name,
+          guildId: selectedGuildToAdd.id,
+          iconUrl: selectedGuildToAdd.iconUrl || "",
+          inviteUrl: quickInviteUrl.trim(),
+          categorySlug: quickCategory,
+          shortDescription: quickShortDesc.trim(),
+          longDescription: quickShortDesc.trim(),
+          tags: quickTags.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setQuickAddStatus({
+          type: "error",
+          message: data.error || "Failed to publish server.",
+        });
+      } else {
+        setQuickAddStatus({
+          type: "success",
+          message: `Server "${selectedGuildToAdd.name}" listed successfully on DiscordServerLink!`,
+          slug: data.server?.slug,
+        });
+
+        if (data.server) {
+          setServers((prev) => [data.server, ...prev]);
+        }
+
+        setDiscordGuilds((prev) =>
+          prev.map((g) =>
+            g.id === selectedGuildToAdd.id
+              ? { ...g, isListed: true, listedServer: data.server }
+              : g
+          )
+        );
+      }
+    } catch {
+      setQuickAddStatus({
+        type: "error",
+        message: "Network error listing server.",
+      });
+    } finally {
+      setIsSubmittingServer(false);
+    }
+  };
 
   // Aggregate Stats
   const totalServers = servers.length;
@@ -98,7 +237,6 @@ export default function DashboardClient({
         });
         if (data.promotion) {
           setPromotions([data.promotion, ...promotions]);
-          // Update the server's pending request in local state
           setServers(
             servers.map((s) =>
               s.id === selectedServerForPromo.id
@@ -255,23 +393,73 @@ export default function DashboardClient({
         </div>
       </div>
 
+      {/* Banner: Discord Account Servers Detected */}
+      {unlistedGuildsCount > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-discord-blurple/20 via-indigo-950/30 to-purple-950/20 border border-discord-blurple/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-glow-sm animate-in fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-discord-blurple flex items-center justify-center text-white shadow-glow-sm shrink-0">
+              <Server className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>You have {unlistedGuildsCount} Discord server{unlistedGuildsCount > 1 ? "s" : ""} ready to list</span>
+                <span className="px-2 py-0.5 rounded-full bg-discord-green/20 text-discord-green border border-discord-green/30 text-[10px] font-black uppercase">
+                  1-Click Add
+                </span>
+              </h4>
+              <p className="text-xs text-zinc-300 mt-0.5">
+                We detected servers on your Discord account where you hold Administrator permissions. Add them to DiscordServerLink now to start getting members and bumps.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab("discord-guilds")}
+            className="px-4 py-2.5 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white font-bold text-xs shadow-glow transition shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span>View Discord Servers</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
+      <div className="flex items-center gap-2 border-b border-zinc-800 pb-3 overflow-x-auto">
         <button
           onClick={() => setActiveTab("servers")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === "servers"
               ? "bg-discord-blurple text-white shadow-glow-sm"
               : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
           }`}
         >
           <Server className="w-4 h-4" />
-          <span>My Servers ({totalServers})</span>
+          <span>My Listed Servers ({totalServers})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("discord-guilds")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+            activeTab === "discord-guilds"
+              ? "bg-discord-blurple text-white shadow-glow-sm"
+              : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+          }`}
+        >
+          <svg className="w-4 h-4 fill-current text-indigo-400" viewBox="0 0 127.14 96.36">
+            <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z" />
+          </svg>
+          <span>Add Discord Servers</span>
+          {unlistedGuildsCount > 0 ? (
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-zinc-950 font-black text-[10px]">
+              {unlistedGuildsCount} new
+            </span>
+          ) : (
+            <span className="text-zinc-500 font-mono text-[10px]">({discordGuilds.length})</span>
+          )}
         </button>
 
         <button
           onClick={() => setActiveTab("bots")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === "bots"
               ? "bg-discord-blurple text-white shadow-glow-sm"
               : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
@@ -283,7 +471,7 @@ export default function DashboardClient({
 
         <button
           onClick={() => setActiveTab("promotions")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
             activeTab === "promotions"
               ? "bg-discord-blurple text-white shadow-glow-sm"
               : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
@@ -308,13 +496,22 @@ export default function DashboardClient({
                   List your Discord community for free to get discovered by thousands of active members.
                 </p>
               </div>
-              <Link
-                href="/servers/new"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-xs font-bold transition"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Submit Your First Server</span>
-              </Link>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("discord-guilds")}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-xs font-bold transition shadow-glow-sm cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Choose from Your Discord Servers</span>
+                </button>
+                <Link
+                  href="/servers/new"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition"
+                >
+                  <span>Manual Form</span>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
@@ -460,6 +657,235 @@ export default function DashboardClient({
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB: DISCORD ACCOUNT SERVERS */}
+      {activeTab === "discord-guilds" && (
+        <div className="space-y-6">
+          <div className="p-5 sm:p-6 rounded-3xl bg-zinc-900/80 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <svg className="w-5 h-5 fill-current text-discord-blurple" viewBox="0 0 127.14 96.36">
+                  <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z" />
+                </svg>
+                <span>Discord Account Servers</span>
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1 max-w-xl">
+                These are Discord servers linked to your account where you hold <strong>Owner</strong> or <strong>Administrator</strong> permissions. Click <strong>&ldquo;+ Add to Website&rdquo;</strong> to list them on DiscordServerLink in seconds.
+              </p>
+            </div>
+
+            <button
+              onClick={fetchDiscordGuilds}
+              disabled={loadingGuilds}
+              className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingGuilds ? "animate-spin text-discord-blurple" : ""}`} />
+              <span>{loadingGuilds ? "Syncing..." : "Sync from Discord"}</span>
+            </button>
+          </div>
+
+          {/* Search & Filter Bar */}
+          {discordGuilds.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-zinc-900/60 p-3 rounded-2xl border border-zinc-800">
+              <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                <button
+                  onClick={() => setGuildFilter("all")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                    guildFilter === "all"
+                      ? "bg-zinc-800 text-white font-bold"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  All ({discordGuilds.length})
+                </button>
+                <button
+                  onClick={() => setGuildFilter("unlisted")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+                    guildFilter === "unlisted"
+                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  <span>Ready to List</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-zinc-950 text-[10px] font-black">
+                    {unlistedGuildsCount}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setGuildFilter("listed")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                    guildFilter === "listed"
+                      ? "bg-zinc-800 text-white font-bold"
+                      : "text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  Already Listed ({discordGuilds.filter((g) => g.isListed).length})
+                </button>
+              </div>
+
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Filter servers..."
+                  value={guildSearch}
+                  onChange={(e) => setGuildSearch(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-discord-blurple"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loadingGuilds && discordGuilds.length === 0 && (
+            <div className="p-12 text-center rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-3">
+              <Loader2 className="w-8 h-8 text-discord-blurple animate-spin mx-auto" />
+              <p className="text-sm font-bold text-white">Connecting to Discord API...</p>
+              <p className="text-xs text-zinc-400">Fetching servers where you have Administrator permissions.</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {guildsError && (
+            <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                <span>{guildsError}</span>
+              </div>
+              <button
+                onClick={fetchDiscordGuilds}
+                className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition shrink-0 cursor-pointer"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loadingGuilds && discordGuilds.length === 0 && !guildsError && (
+            <div className="p-12 text-center rounded-3xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800 text-zinc-500 flex items-center justify-center mx-auto">
+                <Shield className="w-8 h-8" />
+              </div>
+              <div className="space-y-1 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-white">No Manageable Servers Detected</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  We could not find any Discord servers where you are the Owner or have Administrator/Manage Server permissions.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/servers/new"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-xs font-bold transition shadow-glow-sm"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Use Standard Invite Submission</span>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Guilds Grid */}
+          {!loadingGuilds && discordGuilds.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {discordGuilds
+                .filter((g) => {
+                  if (guildFilter === "unlisted") return !g.isListed;
+                  if (guildFilter === "listed") return g.isListed;
+                  return true;
+                })
+                .filter((g) =>
+                  !guildSearch ? true : g.name.toLowerCase().includes(guildSearch.toLowerCase())
+                )
+                .map((guild) => (
+                  <div
+                    key={guild.id}
+                    className={`p-5 rounded-3xl border transition-all flex flex-col justify-between gap-4 ${
+                      guild.isListed
+                        ? "bg-zinc-900/50 border-zinc-800/80 hover:border-zinc-700"
+                        : "bg-zinc-900/90 border-discord-blurple/30 hover:border-discord-blurple/70 shadow-sm"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      {guild.iconUrl ? (
+                        <img
+                          src={guild.iconUrl}
+                          alt={guild.name}
+                          className="w-14 h-14 rounded-2xl object-cover border border-zinc-800 shrink-0 bg-zinc-800"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl bg-discord-blurple text-white font-black text-lg flex items-center justify-center shrink-0">
+                          {guild.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-base font-bold text-white truncate" title={guild.name}>
+                            {guild.name}
+                          </h3>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-[11px] flex-wrap">
+                          {guild.isOwner ? (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold flex items-center gap-1">
+                              👑 Server Owner
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-semibold flex items-center gap-1">
+                              🛡️ Administrator
+                            </span>
+                          )}
+
+                          <span className="text-zinc-500 font-mono text-[10px]">
+                            ID: {guild.id}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-zinc-800/80 gap-3">
+                      {guild.isListed ? (
+                        <>
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>Listed on Website</span>
+                          </span>
+
+                          <Link
+                            href={`/server/${guild.listedServer.slug}`}
+                            className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition flex items-center gap-1"
+                          >
+                            <span>View Listing</span>
+                            <ExternalLink className="w-3 h-3 text-zinc-400" />
+                          </Link>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-[11px] text-zinc-400 flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>Not yet listed</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenQuickAdd(guild)}
+                              className="px-4 py-2 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-xs font-bold shadow-glow-sm hover:shadow-glow transition flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <PlusCircle className="w-3.5 h-3.5" />
+                              <span>+ Add to Website</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
         </div>
@@ -863,6 +1289,201 @@ export default function DashboardClient({
                 {isDeleting ? "Deleting..." : "Yes, Delete"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK ADD SERVER MODAL */}
+      {quickAddModalOpen && selectedGuildToAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl bg-zinc-950 border border-zinc-800 p-6 sm:p-8 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setQuickAddModalOpen(false);
+                setQuickAddStatus(null);
+              }}
+              className="absolute top-5 right-5 text-zinc-400 hover:text-white p-1 rounded-lg cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-discord-blurple/20 border border-discord-blurple/30 text-discord-blurple text-xs font-bold">
+                <Server className="w-3.5 h-3.5" />
+                <span>Quick Server Listing</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white pt-1">
+                List &ldquo;{selectedGuildToAdd.name}&rdquo;
+              </h2>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Publish your Discord server to the public directory to gain members, reviews, and 2-hour bumps.
+              </p>
+            </div>
+
+            {/* Server Card Preview */}
+            <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center gap-3">
+              {selectedGuildToAdd.iconUrl ? (
+                <img
+                  src={selectedGuildToAdd.iconUrl}
+                  alt={selectedGuildToAdd.name}
+                  className="w-12 h-12 rounded-xl object-cover bg-zinc-800 shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-xl bg-discord-blurple text-white font-bold text-base flex items-center justify-center shrink-0">
+                  {selectedGuildToAdd.name.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white truncate">{selectedGuildToAdd.name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[11px] text-zinc-500 font-mono">Guild ID: {selectedGuildToAdd.id}</span>
+                  <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    Verified Owner/Admin
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {quickAddStatus && (
+              <div
+                className={`p-4 rounded-2xl text-xs sm:text-sm space-y-2 ${
+                  quickAddStatus.type === "success"
+                    ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                    : "bg-red-500/10 border border-red-500/30 text-red-300"
+                }`}
+              >
+                <div className="flex items-center gap-2 font-bold">
+                  {quickAddStatus.type === "success" ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                  )}
+                  <span>{quickAddStatus.message}</span>
+                </div>
+                {quickAddStatus.slug && (
+                  <div>
+                    <Link
+                      href={`/server/${quickAddStatus.slug}`}
+                      className="inline-flex items-center gap-1.5 text-xs text-white underline font-bold hover:text-emerald-300"
+                    >
+                      <span>View your new public server page →</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(!quickAddStatus || quickAddStatus.type === "error") && (
+              <form onSubmit={handleQuickAddServer} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                    Permanent Discord Invite Link <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://discord.gg/yourinvitecode"
+                    value={quickInviteUrl}
+                    onChange={(e) => setQuickInviteUrl(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-discord-blurple"
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Tip: In Discord, create an invite link set to &ldquo;Never expire&rdquo;.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                    Primary Category <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    value={quickCategory}
+                    onChange={(e) => setQuickCategory(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-xs text-zinc-200 focus:outline-none focus:border-discord-blurple"
+                  >
+                    {CATEGORY_OPTIONS.map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                    Short Description (1-2 sentences) <span className="text-red-400">*</span>
+                  </label>
+                  <textarea
+                    required
+                    rows={2}
+                    maxLength={180}
+                    value={quickShortDesc}
+                    onChange={(e) => setQuickShortDesc(e.target.value)}
+                    placeholder="A welcoming community for gaming, voice chat, and giveaways..."
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-discord-blurple"
+                  />
+                  <p className="text-[10px] text-zinc-500 text-right">
+                    {quickShortDesc.length} / 180 characters
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                    Keywords &amp; Tags (Comma Separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={quickTags}
+                    onChange={(e) => setQuickTags(e.target.value)}
+                    placeholder="e.g. gaming, hangout, voice, anime"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-discord-blurple"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuickAddModalOpen(false)}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-semibold border border-zinc-800 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingServer}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-xs font-bold transition shadow-glow flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmittingServer ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Publishing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>Publish Server</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {quickAddStatus?.type === "success" && (
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickAddModalOpen(false);
+                    setQuickAddStatus(null);
+                    setActiveTab("servers");
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-xs font-bold transition shadow-glow cursor-pointer"
+                >
+                  Go to My Listed Servers
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

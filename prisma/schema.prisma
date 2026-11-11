@@ -19,6 +19,7 @@ model User {
   discriminator String?
   role          String     @default("USER") // USER, MODERATOR, ADMIN
   banned        Boolean    @default(false)
+  discordAccessToken String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 

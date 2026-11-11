@@ -129,6 +129,8 @@ export const authOptions: NextAuthOptions = {
           ? `https://cdn.discordapp.com/avatars/${discordId}/${discordProfile.avatar}.${format}`
           : null;
 
+        const accessToken = account.access_token || null;
+
         // Find or upsert user
         const existing = await prisma.user.findFirst({
           where: {
@@ -147,6 +149,7 @@ export const authOptions: NextAuthOptions = {
               discriminator: discordProfile.discriminator || "0",
               image: avatar,
               role: "USER",
+              discordAccessToken: accessToken,
             },
           });
         } else {
@@ -156,6 +159,7 @@ export const authOptions: NextAuthOptions = {
               discordId,
               image: avatar || existing.image,
               name: discordProfile.global_name || discordProfile.username || existing.name,
+              discordAccessToken: accessToken || existing.discordAccessToken,
             },
           });
         }
@@ -165,7 +169,10 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      if (account?.access_token) {
+        token.accessToken = account.access_token;
+      }
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || "USER";
@@ -173,12 +180,15 @@ export const authOptions: NextAuthOptions = {
         // Refresh role and id from db if needed
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
-          select: { id: true, role: true, banned: true },
+          select: { id: true, role: true, banned: true, discordAccessToken: true },
         });
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
           token.banned = dbUser.banned;
+          if (dbUser.discordAccessToken && !token.accessToken) {
+            token.accessToken = dbUser.discordAccessToken;
+          }
         }
       }
       return token;
@@ -188,6 +198,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id as string;
         (session.user as any).role = token.role as string;
         (session.user as any).banned = token.banned as boolean;
+        (session.user as any).accessToken = token.accessToken as string;
       }
       return session;
     },
