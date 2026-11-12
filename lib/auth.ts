@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
+import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -11,6 +12,15 @@ const hasDiscordConfig = Boolean(
   discordClientSecret &&
   discordClientId !== "YOUR_DISCORD_CLIENT_ID" &&
   discordClientId !== ""
+);
+
+const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+const hasGoogleConfig = Boolean(
+  googleClientId &&
+  googleClientSecret &&
+  googleClientId !== "YOUR_GOOGLE_CLIENT_ID" &&
+  googleClientId !== ""
 );
 
 export const authOptions: NextAuthOptions = {
@@ -36,6 +46,14 @@ export const authOptions: NextAuthOptions = {
           }),
         ]
       : []),
+    ...(hasGoogleConfig
+      ? [
+          GoogleProvider({
+            clientId: googleClientId!,
+            clientSecret: googleClientSecret!,
+          }),
+        ]
+      : []),
     CredentialsProvider({
       id: "credentials",
       name: "Admin Credentials",
@@ -52,7 +70,7 @@ export const authOptions: NextAuthOptions = {
         const inputPassword = credentials.password;
         let user: any = null;
 
-        // Quick demo user for local testing if Discord OAuth is not configured
+        // Quick demo user for local testing
         if (email === "demo@discordserverlink.com" && inputPassword === "demo123456") {
           return {
             id: "demo-user-cuid-123456",
@@ -97,7 +115,6 @@ export const authOptions: NextAuthOptions = {
           user.password
         );
 
-        // Also permit default admin credentials for root admin account
         if (!isPasswordValid && email === "admin@discordserverlink.com") {
           if (inputPassword === "admin123456" || inputPassword === "J6H!nnQ#8") {
             isPasswordValid = true;
@@ -166,31 +183,82 @@ export const authOptions: NextAuthOptions = {
 
         user.id = dbUser.id;
         (user as any).role = dbUser.role;
+        (user as any).discordId = dbUser.discordId;
+      } else if (account?.provider === "google" && profile) {
+        const googleProfile = profile as any;
+        const email = (googleProfile.email || user.email || "").toLowerCase().trim();
+        const avatar = googleProfile.picture || user.image || null;
+
+        const existing = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        let dbUser;
+        if (!existing) {
+          dbUser = await prisma.user.create({
+            data: {
+              email,
+              name: googleProfile.name || user.name || "Google User",
+              image: avatar,
+              role: "USER",
+            },
+          });
+        } else {
+          dbUser = await prisma.user.update({
+            where: { id: existing.id },
+            data: {
+              image: existing.image || avatar,
+              name: existing.name || googleProfile.name || user.name,
+            },
+          });
+        }
+
+        user.id = dbUser.id;
+        (user as any).role = dbUser.role;
+        (user as any).discordId = dbUser.discordId;
       }
       return true;
     },
     async jwt({ token, user, account }) {
-      if (account?.access_token) {
+      if (account?.access_token && account?.provider === "discord") {
         token.accessToken = account.access_token;
       }
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || "USER";
-      } else if (token.email) {
-        // Refresh role and id from db if needed
-        const dbUser = await prisma.user.findUnique({
-          where: { email: token.email },
-          select: { id: true, role: true, banned: true, discordAccessToken: true },
+        token.discordId = (user as any).discordId || null;
+      }
+
+      // Sync latest permissions and Discord linkage from DB
+      if (token.id || token.email) {
+        const dbUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              ...(token.id ? [{ id: token.id as string }] : []),
+              ...(token.email ? [{ email: token.email as string }] : []),
+            ],
+          },
+          select: {
+            id: true,
+            role: true,
+            banned: true,
+            discordId: true,
+            discordAccessToken: true,
+          },
         });
+
         if (dbUser) {
           token.id = dbUser.id;
           token.role = dbUser.role;
           token.banned = dbUser.banned;
+          token.discordId = dbUser.discordId;
+          token.hasDiscord = Boolean(dbUser.discordId || dbUser.discordAccessToken);
           if (dbUser.discordAccessToken && !token.accessToken) {
             token.accessToken = dbUser.discordAccessToken;
           }
         }
       }
+
       return token;
     },
     async session({ session, token }) {
@@ -199,6 +267,10 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role = token.role as string;
         (session.user as any).banned = token.banned as boolean;
         (session.user as any).accessToken = token.accessToken as string;
+        (session.user as any).discordId = token.discordId as string | null;
+        (session.user as any).hasDiscord = Boolean(
+          token.hasDiscord || token.discordId || token.accessToken
+        );
       }
       return session;
     },

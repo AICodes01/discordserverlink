@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, isFeatured, isVerified, isPartnered, isNsfw, status, name, shortDescription, longDescription, categorySlug } = body;
+    const { id, isFeatured, isVerified, isPartnered, isNsfw, status, name, shortDescription, longDescription, categorySlug, reviewReason } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Server ID is required" }, { status: 400 });
@@ -72,7 +72,14 @@ export async function PATCH(req: NextRequest) {
     if (typeof isVerified === "boolean") updateData.isVerified = isVerified;
     if (typeof isPartnered === "boolean") updateData.isPartnered = isPartnered;
     if (typeof isNsfw === "boolean") updateData.isNsfw = isNsfw;
-    if (status) updateData.status = status;
+    if (status) {
+      updateData.status = status;
+      if (status === "APPROVED") {
+        updateData.reviewedAt = new Date();
+        updateData.reviewedBy = (session?.user as any)?.name || (session?.user as any)?.email;
+      }
+    }
+    if (reviewReason !== undefined) updateData.reviewReason = reviewReason;
     if (name) updateData.name = name;
     if (shortDescription) updateData.shortDescription = shortDescription;
     if (longDescription) updateData.longDescription = longDescription;

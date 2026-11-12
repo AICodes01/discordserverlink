@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import {
   Server,
   Bot,
@@ -69,6 +70,17 @@ export default function DashboardClient({
   const [bots, setBots] = useState<any[]>(initialBots);
   const [promotions, setPromotions] = useState<any[]>(initialPromotions);
   const [activeTab, setActiveTab] = useState<"servers" | "discord-guilds" | "bots" | "promotions">("servers");
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("notice") === "review_pending") {
+        const serverName = params.get("server") || "Your server";
+        setReviewNotice(`"${serverName}" has been submitted and entered the moderation review queue. Once reviewed, it will go live on the website.`);
+      }
+    }
+  }, []);
 
   // Discord Guilds Sync State
   const [discordGuilds, setDiscordGuilds] = useState<any[]>([]);
@@ -112,13 +124,13 @@ export default function DashboardClient({
     try {
       const res = await fetch("/api/dashboard/discord-guilds");
       const data = await res.json();
-      if (!res.ok) {
-        setGuildsError(data.message || data.error || "Failed to load Discord servers.");
+      if (!res.ok || data.error === "NO_DISCORD_TOKEN") {
+        setGuildsError(data.message || "To add and manage Discord servers, please connect your Discord account.");
       } else {
         setDiscordGuilds(data.guilds || []);
       }
     } catch {
-      setGuildsError("Network error fetching Discord servers.");
+      setGuildsError("To add and manage Discord servers, please connect your Discord account.");
     } finally {
       setLoadingGuilds(false);
     }
@@ -131,6 +143,11 @@ export default function DashboardClient({
   const unlistedGuildsCount = discordGuilds.filter((g) => !g.isListed).length;
 
   const handleOpenQuickAdd = (guild: any) => {
+    if (!user?.hasDiscord && user?.role !== "ADMIN" && user?.email !== "demo@discordserverlink.com") {
+      alert("To add and manage Discord servers, please connect your Discord account.");
+      signIn("discord", { callbackUrl: "/dashboard" });
+      return;
+    }
     setSelectedGuildToAdd(guild);
     setQuickInviteUrl("");
     setQuickShortDesc(`Official Discord community for ${guild.name}. Connect, chat, and hangout with fellow members!`);
@@ -171,9 +188,12 @@ export default function DashboardClient({
           message: data.error || "Failed to publish server.",
         });
       } else {
+        const msg = data.needsReview
+          ? `Server "${selectedGuildToAdd.name}" submitted! It is in the moderation review queue and will be published once approved.`
+          : `Server "${selectedGuildToAdd.name}" listed successfully on DiscordServerLink!`;
         setQuickAddStatus({
           type: "success",
-          message: `Server "${selectedGuildToAdd.name}" listed successfully on DiscordServerLink!`,
+          message: msg,
           slug: data.server?.slug,
         });
 
@@ -344,6 +364,51 @@ export default function DashboardClient({
           </Link>
         </div>
       </div>
+
+      {/* Moderation Review Queue Submission Alert */}
+      {reviewNotice && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-lg animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 text-amber-400 shrink-0" />
+            <p className="font-medium text-white">{reviewNotice}</p>
+          </div>
+          <button
+            onClick={() => setReviewNotice(null)}
+            className="p-1 rounded-lg text-amber-400 hover:text-white transition cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Discord Connect Warning for Google / Non-Discord Users */}
+      {!user?.hasDiscord && user?.role !== "ADMIN" && user?.email !== "demo@discordserverlink.com" && (
+        <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-500/15 via-zinc-900 to-indigo-950/40 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-sm font-bold text-white">
+                To add and manage Discord servers, please connect your Discord account.
+              </p>
+              <p className="text-xs text-zinc-400">
+                You are currently signed in as <span className="text-zinc-200 font-medium">{user?.email}</span>. Connecting Discord takes 5 seconds and proves server ownership without token sharing.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => signIn("discord", { callbackUrl: "/dashboard" })}
+            className="shrink-0 inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-xs font-bold transition shadow-glow-sm cursor-pointer"
+          >
+            <svg className="w-4 h-4 fill-current" viewBox="0 0 127.14 96.36">
+              <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z" />
+            </svg>
+            <span>Connect Discord Account</span>
+          </button>
+        </div>
+      )}
 
       {/* Analytics Overview Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -554,27 +619,58 @@ export default function DashboardClient({
                             {server.categorySlug}
                           </span>
 
+                          {/* Status Badges */}
+                          {server.status === "PENDING" && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 shadow-sm">
+                              <Clock className="w-3 h-3 text-amber-400" />
+                              <span>⏳ Under Review</span>
+                            </span>
+                          )}
+
+                          {server.status === "REJECTED" && (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-500/20 text-red-300 border border-red-500/40 flex items-center gap-1">
+                              <span>✕ Rejected</span>
+                            </span>
+                          )}
+
                           {/* Featured Plan Badge with Countdown */}
-                          {isFeaturedActive && (
+                          {server.status === "APPROVED" && isFeaturedActive && (
                             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 shadow-sm">
                               <Sparkles className="w-3 h-3 fill-current" />
                               <span>Featured Active &bull; {daysRemaining} days remaining</span>
                             </span>
                           )}
 
-                          {hasPendingPromo && (
+                          {server.status === "APPROVED" && hasPendingPromo && (
                             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               <span>Promotion Pending Review</span>
                             </span>
                           )}
 
-                          {!isFeaturedActive && !hasPendingPromo && (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-zinc-950 text-zinc-400 border border-zinc-800">
-                              Normal Server
+                          {server.status === "APPROVED" && !isFeaturedActive && !hasPendingPromo && (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              ✓ Live on Website
                             </span>
                           )}
                         </div>
+
+                        {server.status === "PENDING" && (
+                          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] flex items-center gap-2 mt-1">
+                            <Clock className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                            <span>
+                              In moderation queue: {server.reviewReason || "Awaiting admin manual review"}. This server will be live once approved.
+                            </span>
+                          </div>
+                        )}
+                        {server.status === "REJECTED" && (
+                          <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-[11px] flex items-center gap-2 mt-1">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-400" />
+                            <span>
+                              Submission not approved: {server.reviewReason || "Server does not meet directory listing guidelines"}.
+                            </span>
+                          </div>
+                        )}
 
                         <p className="text-xs text-zinc-400 line-clamp-1">
                           {server.shortDescription}
@@ -635,12 +731,18 @@ export default function DashboardClient({
                         </button>
                       )}
 
-                      <Link
-                        href={`/server/${server.slug}`}
-                        className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition"
-                      >
-                        View
-                      </Link>
+                      {server.status === "APPROVED" ? (
+                        <Link
+                          href={`/server/${server.slug}`}
+                          className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition"
+                        >
+                          View
+                        </Link>
+                      ) : (
+                        <span className="px-3 py-2 rounded-xl bg-zinc-950 text-zinc-500 text-xs font-medium border border-zinc-800">
+                          {server.status === "PENDING" ? "Under Review" : "Rejected"}
+                        </span>
+                      )}
 
                       <button
                         type="button"
@@ -749,18 +851,31 @@ export default function DashboardClient({
             </div>
           )}
 
-          {/* Error State */}
+          {/* Error / Connect Discord State */}
           {guildsError && (
-            <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-                <span>{guildsError}</span>
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/15 via-zinc-900 to-indigo-950/40 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-sm font-bold text-white">
+                    {guildsError}
+                  </p>
+                  <p className="text-xs text-zinc-400">
+                    Connect your Discord account to instantly view and 1-click list all servers where you are an Owner or Admin.
+                  </p>
+                </div>
               </div>
               <button
-                onClick={fetchDiscordGuilds}
-                className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition shrink-0 cursor-pointer"
+                type="button"
+                onClick={() => signIn("discord", { callbackUrl: "/dashboard" })}
+                className="shrink-0 inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-discord-blurple hover:bg-discord-hover text-white text-xs font-bold transition shadow-glow-sm cursor-pointer"
               >
-                Try Again
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 127.14 96.36">
+                  <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z" />
+                </svg>
+                <span>Connect Discord Account</span>
               </button>
             </div>
           )}

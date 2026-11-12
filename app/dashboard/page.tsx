@@ -26,6 +26,18 @@ export default async function DashboardPage() {
   const userId = (session.user as any).id;
   const userEmail = session.user.email || "";
 
+  // Check Discord account link status
+  const dbUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { discordId: true, discordAccessToken: true, role: true },
+  });
+  const hasDiscord = Boolean(
+    dbUser?.discordId ||
+    dbUser?.discordAccessToken ||
+    (session.user as any).hasDiscord ||
+    (session.user as any).accessToken
+  );
+
   // 1. Fetch user's servers
   let userServers: any[] = [];
   try {
@@ -85,7 +97,11 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
-      user={session.user}
+      user={{
+        ...session.user,
+        hasDiscord,
+        role: dbUser?.role || (session.user as any).role,
+      }}
       initialServers={userServers}
       initialBots={userBots}
       initialPromotions={userPromotions}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -179,7 +179,11 @@ export default function AddServerPage() {
       if (!res.ok) {
         setSubmitError(data.error || "Failed to create server");
       } else {
-        router.push(`/server/${data.server.slug}`);
+        if (data.needsReview) {
+          router.push(`/dashboard?notice=review_pending&server=${encodeURIComponent(data.server.name)}`);
+        } else {
+          router.push(`/server/${data.server.slug}`);
+        }
       }
     } catch {
       setSubmitError("Failed to save server. Please try again.");
@@ -382,13 +386,40 @@ export default function AddServerPage() {
               Only logged-in users can list a Discord server. Signing in links your server to your user dashboard so you can view live analytics (views, bumps, join clicks) and manage or promote it.
             </p>
           </div>
-          <Link
-            href="/login?callbackUrl=/servers/new"
-            className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-discord-blurple hover:bg-discord-hover text-white font-bold text-sm shadow-glow hover:shadow-glow-sm transition hover:scale-105"
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/login?callbackUrl=/servers/new"
+              className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-discord-blurple hover:bg-discord-hover text-white font-bold text-sm shadow-glow hover:shadow-glow-sm transition hover:scale-105"
+            >
+              <span>Sign In with Discord to Continue</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      ) : !(session?.user as any)?.hasDiscord && (session?.user as any)?.role !== "ADMIN" && (session?.user as any)?.email !== "demo@discordserverlink.com" ? (
+        <div className="rounded-3xl bg-gradient-to-b from-indigo-950/40 via-zinc-900 to-zinc-900 border border-indigo-500/30 p-8 sm:p-12 text-center space-y-6 shadow-2xl backdrop-blur-xl">
+          <div className="w-16 h-16 rounded-3xl bg-discord-blurple/20 border border-discord-blurple/40 text-discord-blurple flex items-center justify-center mx-auto shadow-inner">
+            <svg className="w-8 h-8 fill-current" viewBox="0 0 127.14 96.36">
+              <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z" />
+            </svg>
+          </div>
+          <div className="space-y-3 max-w-lg mx-auto">
+            <h2 className="text-2xl font-black text-white">Discord Account Required</h2>
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm font-semibold text-center">
+              To add and manage Discord servers, please connect your Discord account.
+            </div>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              You are currently signed in as <strong className="text-zinc-200">{session?.user?.email}</strong>. Because Discord requires verified ownership or admin permissions to list a server, connecting your Discord account takes only 5 seconds.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => signIn("discord", { callbackUrl: "/servers/new" })}
+            className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl bg-discord-blurple hover:bg-discord-hover text-white font-bold text-sm shadow-glow transition hover:scale-105 cursor-pointer"
           >
-            <span>Sign In with Discord to Continue</span>
+            <span>Connect Discord Account</span>
             <ArrowRight className="w-4 h-4" />
-          </Link>
+          </button>
         </div>
       ) : (
       <div className="rounded-3xl bg-zinc-900/80 border border-zinc-800 p-6 sm:p-10 shadow-2xl space-y-8">

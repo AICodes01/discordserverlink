@@ -53,6 +53,9 @@ model Server {
   featuredUntil     DateTime?
   promotionPlan     String?   // "1_month", "3_months"
   status            String    @default("APPROVED") // PENDING, APPROVED, REJECTED, BANNED
+  reviewReason      String?   // Reason flagged for manual admin review or rejection note
+  reviewedAt        DateTime?
+  reviewedBy        String?
   bumpsCount        Int       @default(0)
   lastBumpedAt      DateTime  @default(now())
   viewsCount        Int       @default(0)

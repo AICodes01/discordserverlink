@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import slugify from "slugify";
+import { evaluateServerModeration } from "@/lib/moderation";
 
 export async function GET(req: NextRequest) {
   try {
@@ -97,6 +98,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Verify user has connected Discord account
+    const dbUser = await prisma.user.findUnique({
+      where: { id: ownerId },
+      select: { id: true, email: true, discordId: true, discordAccessToken: true, role: true },
+    });
+
+    const isPrivileged = dbUser?.role === "ADMIN" || dbUser?.role === "MODERATOR";
+    const hasDiscord = Boolean(dbUser?.discordId || dbUser?.discordAccessToken || (session?.user as any)?.hasDiscord);
+
+    if (!hasDiscord && !isPrivileged && dbUser?.email !== "demo@discordserverlink.com") {
+      return NextResponse.json(
+        {
+          error: "To add and manage Discord servers, please connect your Discord account.",
+          requiresDiscordLink: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
 
     const {
@@ -150,11 +170,24 @@ export async function POST(req: NextRequest) {
       counter++;
     }
 
-    // Check require_server_approval setting
+    // Site setting check
     const approvalSetting = await prisma.siteSetting.findUnique({
       where: { key: "require_server_approval" },
     });
-    const status = approvalSetting?.value === "true" ? "PENDING" : "APPROVED";
+
+    // Evaluate automated moderation filters (member count, adult keywords, illegal terms)
+    const moderation = evaluateServerModeration({
+      name,
+      shortDescription,
+      longDescription,
+      tags,
+      memberCount: typeof memberCount === "number" ? memberCount : 0,
+      isNsfw: Boolean(isNsfw),
+      requireSiteApproval: approvalSetting?.value === "true",
+    });
+
+    const status = moderation.status; // "PENDING" or "APPROVED"
+    const reviewReason = moderation.reasons.length > 0 ? moderation.reasons.join(" • ") : null;
 
     const server = await prisma.server.create({
       data: {
@@ -174,11 +207,23 @@ export async function POST(req: NextRequest) {
         isPartnered: !!isPartnered,
         isNsfw: !!isNsfw,
         status,
+        reviewReason,
         ownerId,
       },
     });
 
-    return NextResponse.json({ success: true, server }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        server,
+        needsReview: moderation.needsReview,
+        reviewReason,
+        message: moderation.needsReview
+          ? "Your server has been submitted and is currently in the moderation review queue. Once reviewed and approved by our team, it will appear publicly on the website."
+          : "Server submitted successfully and is now live on DiscordServerLink!",
+      },
+      { status: 201 }
+    );
   } catch (error: any) {
     console.error("Server create error:", error);
     return NextResponse.json(

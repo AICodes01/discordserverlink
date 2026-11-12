@@ -207,16 +207,16 @@ export default function AdminDashboardClient({
     }
   };
 
-  const handleChangeServerStatus = async (id: string, newStatus: string) => {
+  const handleChangeServerStatus = async (id: string, newStatus: string, reviewReason?: string) => {
     try {
       const res = await fetch("/api/admin/servers", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: newStatus }),
+        body: JSON.stringify({ id, status: newStatus, reviewReason }),
       });
       if (res.ok) {
         setServers((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, status: newStatus } : s))
+          prev.map((s) => (s.id === id ? { ...s, status: newStatus, reviewReason: reviewReason !== undefined ? reviewReason : s.reviewReason } : s))
         );
         showToast(`Server status changed to ${newStatus}`);
       } else {
@@ -1920,6 +1920,34 @@ export default function AdminDashboardClient({
               </div>
             </div>
 
+            {/* Moderation Review Queue Quick Alert */}
+            {servers.filter((s) => s.status === "PENDING").length > 0 && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {servers.filter((s) => s.status === "PENDING").length} Server(s) Awaiting Review
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      These servers triggered automated filters (low member count, adult keywords, or scam phrases) and are held for admin approval.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setServerStatusFilter("PENDING");
+                    setServerPage(1);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black text-xs transition shadow-sm shrink-0 cursor-pointer"
+                >
+                  Review Pending ({servers.filter((s) => s.status === "PENDING").length})
+                </button>
+              </div>
+            )}
+
             {/* Filter controls */}
             <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
               <div className="relative flex-1 min-w-[200px]">
@@ -2007,6 +2035,11 @@ export default function AdminDashboardClient({
                                 <p className="text-[10px] font-mono text-zinc-500">
                                   /{server.slug}
                                 </p>
+                                {server.reviewReason && (
+                                  <span className="mt-1 inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 border border-amber-500/30 text-amber-300 max-w-xs truncate" title={server.reviewReason}>
+                                    ⚠️ {server.reviewReason}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -2095,6 +2128,30 @@ export default function AdminDashboardClient({
 
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              {server.status === "PENDING" && (
+                                <>
+                                  <button
+                                    onClick={() => handleChangeServerStatus(server.id, "APPROVED")}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-black text-[11px] transition shadow-sm cursor-pointer"
+                                    title="Approve Server and Make Live"
+                                  >
+                                    ✓ Approve
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      const reason = window.prompt("Reason for rejection (optional):");
+                                      if (reason !== null) {
+                                        handleChangeServerStatus(server.id, "REJECTED", reason);
+                                      }
+                                    }}
+                                    className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-[11px] font-bold transition cursor-pointer"
+                                    title="Reject Server"
+                                  >
+                                    ✕ Reject
+                                  </button>
+                                </>
+                              )}
+
                               <Link
                                 href={`/server/${server.slug}`}
                                 target="_blank"
