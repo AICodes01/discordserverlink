@@ -30,13 +30,41 @@ interface TagPageProps {
   };
 }
 
+function formatTagDisplay(tag: string): string {
+  if (!tag) return "";
+  const decoded = decodeURIComponent(tag).trim();
+  const ACRONYMS: Record<string, string> = {
+    ai: "AI",
+    rpg: "RPG",
+    fnf: "FNF",
+    pvp: "PvP",
+    fps: "FPS",
+    smp: "SMP",
+    vc: "VC",
+    mmo: "MMO",
+    mmorpg: "MMORPG",
+    gta: "GTA",
+    fivem: "FiveM",
+  };
+
+  return decoded
+    .split(/[-_\s]+/)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      if (ACRONYMS[lower]) return ACRONYMS[lower];
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
 export async function generateMetadata({ params, searchParams }: TagPageProps): Promise<Metadata> {
-  const tagName = decodeURIComponent(params.tag);
+  const rawTag = decodeURIComponent(params.tag);
+  const formattedTagName = formatTagDisplay(rawTag);
   const page = Math.max(1, parseInt(searchParams?.page || "1", 10));
   const pageSuffix = page > 1 ? ` - Page ${page}` : "";
 
-  const title = `Top #${tagName} Discord Servers 2026${pageSuffix} - DiscordServerLink`;
-  const description = `Discover the best Discord servers tagged with #${tagName}. Connect with active players, developers, and community members on discordserverlink.com.`;
+  const title = `Discord Server Tagged with "${formattedTagName}" in 2026${pageSuffix}`;
+  const description = `Discover top Discord servers tagged with "${formattedTagName}" in 2026. Explore active communities, member counts, live voice channels, and join links on discordserverlink.com.`;
 
   const canonical =
     page > 1
@@ -58,22 +86,22 @@ export async function generateMetadata({ params, searchParams }: TagPageProps): 
   };
 }
 
-function getTagFAQs(tagName: string): FAQItem[] {
+function getTagFAQs(tagName: string, formattedTagName: string): FAQItem[] {
   return [
     {
-      question: `How do I find the most active #${tagName} Discord servers?`,
-      answer: `Our #${tagName} directory ranks servers automatically based on live bump activity and online presence. Look for listings with high online counts and recent bump timestamps to connect with communities where voice channels and chats are active right now.`,
+      question: `How do I find the most active Discord servers tagged with "${formattedTagName}" in 2026?`,
+      answer: `Our directory ranks servers tagged with "${formattedTagName}" automatically based on live bump activity and online presence. Look for listings with high online counts and recent bump timestamps to connect with communities where voice channels and chats are active right now.`,
     },
     {
-      question: `How can I add the #${tagName} tag to my own Discord server?`,
-      answer: `When adding or editing your server on DiscordServerLink, simply include "${tagName}" in the comma-separated Tags field. Your server will instantly appear on this dedicated #${tagName} directory page and be indexed by search engines.`,
+      question: `How can I add the "${formattedTagName}" tag to my own Discord server?`,
+      answer: `When adding or editing your server on DiscordServerLink, simply include "${tagName}" in the comma-separated Tags field. Your server will instantly appear on this dedicated tag directory page and be indexed by search engines.`,
     },
     {
-      question: `Is it safe to join servers tagged with #${tagName}?`,
+      question: `Is it safe to join Discord servers tagged with "${formattedTagName}"?`,
       answer: `Yes. All listings undergo automated URL invite verification. Look for communities with Verified badges, zero-tolerance anti-harassment rules, and active moderation teams to ensure a safe, welcoming experience.`,
     },
     {
-      question: `How often is the #${tagName} Discord server leaderboard updated?`,
+      question: `How often is the "${formattedTagName}" Discord server leaderboard updated?`,
       answer: `The leaderboard updates in real time! Whenever an owner or community member clicks the "Bump Server" button, their server shoots straight to #1 on this tag page.`,
     },
   ];
@@ -81,6 +109,7 @@ function getTagFAQs(tagName: string): FAQItem[] {
 
 export default async function TagDetailPage({ params, searchParams }: TagPageProps) {
   const tagName = decodeURIComponent(params.tag).toLowerCase();
+  const formattedTagName = formatTagDisplay(params.tag);
   const page = Math.max(1, parseInt(searchParams?.page || "1", 10));
   const limit = 24;
   const skip = (page - 1) * limit;
@@ -122,7 +151,7 @@ export default async function TagDetailPage({ params, searchParams }: TagPagePro
 
   const totalPages = Math.ceil(totalCount / limit);
 
-  const faqs = getTagFAQs(tagName);
+  const faqs = getTagFAQs(tagName, formattedTagName);
 
   const breadcrumbSchema = generateBreadcrumbSchema([
     { name: "Home", url: "/" },
@@ -162,7 +191,7 @@ export default async function TagDetailPage({ params, searchParams }: TagPagePro
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-          #{tagName} Discord Servers
+          Discord Server Tagged with &quot;{formattedTagName}&quot; in 2026
         </h1>
         <p className="mt-3 text-sm sm:text-base text-zinc-300 max-w-3xl leading-relaxed">
           Explore {totalCount.toLocaleString("en-US")} active communities tagged with <strong className="text-white">#{tagName}</strong>. Find teammates, join discussions, and chat with passionate fans on discordserverlink.com.
@@ -285,8 +314,8 @@ export default async function TagDetailPage({ params, searchParams }: TagPagePro
       {/* Tag FAQs with Schema.org Integration */}
       <FAQAccordion
         faqs={faqs}
-        title={`Frequently Asked Questions About #${tagName} Servers`}
-        description={`Quick answers on discovering and ranking #{tagName} Discord communities.`}
+        title={`Frequently Asked Questions About "${formattedTagName}" Discord Servers`}
+        description={`Quick answers on discovering and ranking Discord servers tagged with "${formattedTagName}" in 2026.`}
       />
     </div>
   );
