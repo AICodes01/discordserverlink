@@ -8,6 +8,7 @@ import type { Metadata } from "next";
 import {
   SITE_URL,
   SITE_NAME,
+  DEFAULT_OG_IMAGES,
   generateBreadcrumbSchema,
   generateFAQSchema,
 } from "@/lib/seo";
@@ -193,6 +194,13 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
       description,
       url: canonical,
       siteName: SITE_NAME,
+      images: DEFAULT_OG_IMAGES,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/og-image.png"],
     },
   };
 }

@@ -2,6 +2,15 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://discordserv
 export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "DiscordServerLink";
 export const SITE_DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || "discordserverlink.com";
 
+export const DEFAULT_OG_IMAGES = [
+  {
+    url: "/og-image.png",
+    width: 1200,
+    height: 630,
+    alt: `${SITE_NAME} - Discord Server Directory`,
+  },
+];
+
 export function generateWebSiteSchema() {
   return {
     "@context": "https://schema.org",

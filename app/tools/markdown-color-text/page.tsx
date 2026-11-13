@@ -14,7 +14,7 @@ import {
   Code2,
 } from "lucide-react";
 import MarkdownColorTextClient from "@/components/tools/MarkdownColorTextClient";
-import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+import { SITE_URL, DEFAULT_OG_IMAGES, generateBreadcrumbSchema } from "@/lib/seo";
 import { getPageSeo } from "@/lib/seoSettings";
 
 export const revalidate = 60;
@@ -30,6 +30,14 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: seo.title,
       description: seo.description,
+      url: `${SITE_URL}/tools/markdown-color-text`,
+      images: DEFAULT_OG_IMAGES,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.title,
+      description: seo.description,
+      images: ["/og-image.png"],
     },
   };
 }
