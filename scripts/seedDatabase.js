@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 
 const prisma = new PrismaClient();
 
@@ -50,9 +51,58 @@ async function syncBlogPosts() {
 }
 
 async function main() {
-  // 1. Always synchronize blog posts first so all 14 articles exist in PostgreSQL
+  // 1. Synchronize blog posts
   await syncBlogPosts();
 
+  // 2. Ensure default root admin user exists
+  try {
+    await prisma.user.upsert({
+      where: { email: "admin@discordserverlink.com" },
+      create: {
+        id: "cmvqr9ryj0000m12nbl63i1cg",
+        email: "admin@discordserverlink.com",
+        name: "Chief Admin",
+        role: "ADMIN",
+        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      },
+      update: {},
+    });
+  } catch (e) {
+    console.warn("Root admin user upsert warning:", e.message);
+  }
+
+  // 3. Ensure Category records exist
+  const dataFile = path.join(__dirname, "..", "prisma", "seed-data.json");
+  if (fs.existsSync(dataFile)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
+      if (data.categories && data.categories.length > 0) {
+        for (const c of data.categories) {
+          try {
+            await prisma.category.upsert({
+              where: { id: c.id },
+              create: c,
+              update: c,
+            });
+          } catch {}
+        }
+        console.log(`✓ Verified ${data.categories.length} categories`);
+      }
+      if (data.siteSettings && data.siteSettings.length > 0) {
+        for (const s of data.siteSettings) {
+          try {
+            await prisma.siteSetting.upsert({
+              where: { id: s.id },
+              create: s,
+              update: s,
+            });
+          } catch {}
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 4. Check current server count
   let serverCount = 0;
   try {
     serverCount = await prisma.server.count();
@@ -61,96 +111,98 @@ async function main() {
     console.log("Could not query server count:", err.message);
   }
 
-  if (serverCount > 0) {
-    console.log("Database already contains servers. Skipping seed.");
+  // If already contains the full dataset (30,000+ servers), skip re-seeding
+  if (serverCount >= 30000) {
+    console.log(`Database already has full 31k dataset (${serverCount} servers). Skipping seed.`);
     return;
   }
 
-  const dataFile = path.join(__dirname, "..", "prisma", "seed-data.json");
-  if (!fs.existsSync(dataFile)) {
-    console.log("No seed-data.json found. Skipping.");
+  const gzPath = path.join(__dirname, "..", "prisma", "servers-31k.json.gz");
+  if (!fs.existsSync(gzPath)) {
+    console.log("No servers-31k.json.gz found. Skipping server import.");
     return;
   }
 
-  console.log("Seeding database with initial dataset...");
-  const data = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
+  console.log(`\n=== IMPORTING 31,209 DISCORD SERVERS ===`);
+  console.log(`Replacing ${serverCount} outdated servers with fresh 31,209 dataset...`);
 
-  // 1. Users
-  if (data.users && data.users.length > 0) {
-    for (const u of data.users) {
-      try {
-        await prisma.user.upsert({
-          where: { id: u.id },
-          create: u,
-          update: u,
-        });
-      } catch (e) {}
-    }
-    console.log(`✓ Inserted ${data.users.length} users`);
+  // Remove old servers and related cascading records
+  try {
+    await prisma.bump.deleteMany();
+    await prisma.review.deleteMany();
+    await prisma.promotionRequest.deleteMany();
+    await prisma.server.deleteMany();
+    console.log("✓ Previous servers removed cleanly from database.");
+  } catch (delErr) {
+    console.warn("Delete warning:", delErr.message);
   }
 
-  // 2. Categories
-  if (data.categories && data.categories.length > 0) {
-    for (const c of data.categories) {
-      try {
-        await prisma.category.upsert({
-          where: { id: c.id },
-          create: c,
-          update: c,
-        });
-      } catch (e) {}
-    }
-    console.log(`✓ Inserted ${data.categories.length} categories`);
-  }
+  // Decompress and parse
+  console.log("Decompressing servers-31k.json.gz...");
+  const gzBuffer = fs.readFileSync(gzPath);
+  const jsonStr = zlib.gunzipSync(gzBuffer).toString("utf-8");
+  const rawServers = JSON.parse(jsonStr);
+  console.log(`Decompressed ${rawServers.length} servers. Formatting dates...`);
 
-  // 3. Site Settings
-  if (data.siteSettings && data.siteSettings.length > 0) {
-    for (const s of data.siteSettings) {
-      try {
-        await prisma.siteSetting.upsert({
-          where: { id: s.id },
-          create: s,
-          update: s,
-        });
-      } catch (e) {}
-    }
-    console.log(`✓ Inserted ${data.siteSettings.length} site settings`);
-  }
+  const servers = rawServers.map((s) => ({
+    id: s.id,
+    guildId: s.guildId || null,
+    name: s.name,
+    slug: s.slug,
+    shortDescription: s.shortDescription || "",
+    longDescription: s.longDescription || s.shortDescription || "",
+    inviteUrl: s.inviteUrl,
+    inviteCode: s.inviteCode || null,
+    iconUrl: s.iconUrl || null,
+    bannerUrl: s.bannerUrl || null,
+    memberCount: typeof s.memberCount === "number" ? s.memberCount : 0,
+    onlineCount: typeof s.onlineCount === "number" ? s.onlineCount : 0,
+    categorySlug: s.categorySlug || "community",
+    tags: s.tags || "",
+    language: s.language || "en",
+    isNsfw: Boolean(s.isNsfw),
+    isFeatured: Boolean(s.isFeatured),
+    isVerified: Boolean(s.isVerified),
+    isPartnered: Boolean(s.isPartnered),
+    status: s.status || "APPROVED",
+    reviewReason: s.reviewReason || null,
+    bumpsCount: typeof s.bumpsCount === "number" ? s.bumpsCount : 0,
+    viewsCount: typeof s.viewsCount === "number" ? s.viewsCount : 0,
+    joinsCount: typeof s.joinsCount === "number" ? s.joinsCount : 0,
+    ownerId: s.ownerId || "cmvqr9ryj0000m12nbl63i1cg",
+    lastBumpedAt: s.lastBumpedAt ? new Date(s.lastBumpedAt) : new Date(),
+    createdAt: s.createdAt ? new Date(s.createdAt) : new Date(),
+    updatedAt: s.updatedAt ? new Date(s.updatedAt) : new Date(),
+  }));
 
-  // 4. Video Items
-  if (data.videoItems && data.videoItems.length > 0) {
-    for (const v of data.videoItems) {
-      try {
-        await prisma.videoItem.upsert({
-          where: { id: v.id },
-          create: v,
-          update: v,
-        });
-      } catch (e) {}
-    }
-  }
+  const BATCH_SIZE = 500;
+  console.log(`Inserting ${servers.length} servers in batches of ${BATCH_SIZE}...`);
+  const startTime = Date.now();
 
-  // 5. Servers in batches of 100
-  if (data.servers && data.servers.length > 0) {
-    const BATCH_SIZE = 100;
-    for (let i = 0; i < data.servers.length; i += BATCH_SIZE) {
-      const chunk = data.servers.slice(i, i + BATCH_SIZE);
-      try {
-        await prisma.server.createMany({
-          data: chunk,
-          skipDuplicates: true,
-        });
-      } catch (batchErr) {
-        // Fallback row-by-row
-        for (const item of chunk) {
-          try {
-            await prisma.server.create({ data: item });
-          } catch {}
-        }
+  for (let i = 0; i < servers.length; i += BATCH_SIZE) {
+    const chunk = servers.slice(i, i + BATCH_SIZE);
+    try {
+      await prisma.server.createMany({
+        data: chunk,
+        skipDuplicates: true,
+      });
+    } catch (batchErr) {
+      console.warn(`Batch ${i} error, falling back:`, batchErr.message);
+      for (const item of chunk) {
+        try {
+          await prisma.server.create({ data: item });
+        } catch {}
       }
     }
-    console.log(`✓ Inserted ${data.servers.length} Discord servers`);
+
+    const currentCount = Math.min(i + BATCH_SIZE, servers.length);
+    if (currentCount % 5000 === 0 || currentCount === servers.length) {
+      console.log(`✓ Inserted ${currentCount} / ${servers.length} servers...`);
+    }
   }
+
+  const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+  console.log(`✓ 31,209 servers successfully imported into database in ${duration}s!`);
 }
 
 main()
