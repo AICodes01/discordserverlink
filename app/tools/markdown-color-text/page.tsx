@@ -15,20 +15,24 @@ import {
 } from "lucide-react";
 import MarkdownColorTextClient from "@/components/tools/MarkdownColorTextClient";
 import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
-export const metadata: Metadata = {
-  title: "Discord Colored Text Generator: ANSI Color Text & Markdown Formatter",
-  description:
-    "Discord Colored Text Generator & ANSI Markdown Formatter: Create colorful Red, Green, Blue, Yellow, Pink, and Cyan text messages in Discord using ANSI codeblocks. Free 1-click copy for server rules, announcements, and embeds.",
-  alternates: {
-    canonical: `${SITE_URL}/tools/markdown-color-text`,
-  },
-  openGraph: {
-    title: "Discord Colored Text Generator: ANSI Color Text & Markdown Formatter",
-    description:
-      "Send colored text messages in Discord! Create Red, Green, Blue, Cyan, and Yellow formatted text blocks using native Discord ANSI markdown. 100% free with live preview.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("tool_markdown_color_text");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/tools/markdown-color-text`,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+    },
+  };
+}
 
 export default function MarkdownColorTextPage() {
   const breadcrumbs = generateBreadcrumbSchema([

@@ -25,15 +25,18 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import { generateBreadcrumbSchema, generateFAQSchema, SITE_URL } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
-export const metadata: Metadata = {
-  title: "All Discord Server Categories 2026 - DiscordServerLink",
-  description:
-    "Browse Discord servers across Gaming, Anime, Technology, AI, Movies, eSports, Fitness, Memes, Podcasts, and more on discordserverlink.com.",
-  alternates: {
-    canonical: `${SITE_URL}/categories`,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("categories");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/categories`,
+    },
+  };
+}
 
 const categoryIcons: Record<string, any> = {
   gaming: Gamepad2,

@@ -15,20 +15,24 @@ import {
 } from "lucide-react";
 import WebhookSenderClient from "@/components/tools/WebhookSenderClient";
 import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
-export const metadata: Metadata = {
-  title: "Discord Webhook Sender: Test Embeds & Send Custom Discord Webhook Messages",
-  description:
-    "Discord Webhook Sender & Embed Builder: Send custom announcements, formatted messages, and rich embeds to any Discord channel using webhooks. Live Discord preview, custom bot avatars, and 100% free with no login required.",
-  alternates: {
-    canonical: `${SITE_URL}/tools/webhook-sender`,
-  },
-  openGraph: {
-    title: "Discord Webhook Sender: Test Embeds & Send Custom Discord Webhook Messages",
-    description:
-      "Send custom messages and rich embeds to Discord channels via webhooks. Customize bot avatar, username, and embed color with live dark-mode chat preview.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("tool_webhook_sender");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/tools/webhook-sender`,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+    },
+  };
+}
 
 export default function WebhookSenderPage() {
   const breadcrumbs = generateBreadcrumbSchema([

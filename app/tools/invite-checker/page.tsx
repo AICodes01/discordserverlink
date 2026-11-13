@@ -16,20 +16,24 @@ import {
 } from "lucide-react";
 import InviteCheckerClient from "@/components/tools/InviteCheckerClient";
 import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
-export const metadata: Metadata = {
-  title: "Discord Invite Link Checker: Inspect Server Invite Status & Member Counts",
-  description:
-    "Discord Invite Link Checker & Inspector: Verify any Discord invite code or link. Check active online member counts, total members, server banner, guild ID, and invite validity in real time. 100% free with no login required.",
-  alternates: {
-    canonical: `${SITE_URL}/tools/invite-checker`,
-  },
-  openGraph: {
-    title: "Discord Invite Link Checker: Inspect Server Invite Status & Member Counts",
-    description:
-      "Inspect any Discord invite link or vanity URL. Real-time online member counts, total members, server icon, banner, and validity check without joining.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("tool_invite_checker");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/tools/invite-checker`,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+    },
+  };
+}
 
 export default function InviteCheckerPage() {
   const breadcrumbs = generateBreadcrumbSchema([

@@ -16,20 +16,24 @@ import {
 } from "lucide-react";
 import SnowflakeConverterClient from "@/components/tools/SnowflakeConverterClient";
 import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
-export const metadata: Metadata = {
-  title: "Discord Snowflake to Timestamp Converter: Discord Account & Server Age Finder",
-  description:
-    "Discord Snowflake to Timestamp Converter: Decode any Discord ID (User, Server, Channel, Role, Message) into exact creation date, UTC time, and relative account age. 100% free with no login required.",
-  alternates: {
-    canonical: `${SITE_URL}/tools/snowflake-timestamp`,
-  },
-  openGraph: {
-    title: "Discord Snowflake to Timestamp Converter: Discord Account & Server Age Finder",
-    description:
-      "Find the exact creation date and account age of any Discord User, Server, Channel, or Message using their 64-bit Snowflake ID.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("tool_snowflake_timestamp");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/tools/snowflake-timestamp`,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+    },
+  };
+}
 
 export default function SnowflakeConverterPage() {
   const breadcrumbs = generateBreadcrumbSchema([

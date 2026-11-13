@@ -15,20 +15,24 @@ import {
 } from "lucide-react";
 import FancyFontsClient from "@/components/tools/FancyFontsClient";
 import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
-export const metadata: Metadata = {
-  title: "Discord Fancy Fonts & Aesthetic Nickname Generator: Copy and Paste Discord Fonts",
-  description:
-    "Discord Fancy Fonts & Aesthetic Nickname Generator: Generate over 15+ stylish Unicode fonts for Discord usernames, channel names, role titles, and bios. 1-click copy & paste aesthetic cursive, gothic, small caps, and bubble text.",
-  alternates: {
-    canonical: `${SITE_URL}/tools/fancy-fonts`,
-  },
-  openGraph: {
-    title: "Discord Fancy Fonts & Aesthetic Nickname Generator: Copy and Paste Discord Fonts",
-    description:
-      "Free aesthetic Discord font generator. Create stylish nicknames, channel names, and bios using Small Caps, Gothic, Cursive, and Bubble Unicode fonts. 100% free with 1-click copy.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("tool_fancy_fonts");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/tools/fancy-fonts`,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+    },
+  };
+}
 
 export default function FancyFontsPage() {
   const breadcrumbs = generateBreadcrumbSchema([

@@ -44,8 +44,12 @@ import {
   ChevronRight,
   Crown,
   Star,
+  FileText,
+  Compass,
 } from "lucide-react";
 import AdminBlogManager from "@/components/admin/AdminBlogManager";
+import AdminPageSeoManager from "@/components/admin/AdminPageSeoManager";
+import AdminSitemapManager from "@/components/admin/AdminSitemapManager";
 
 interface AdminProps {
   initialServers: any[];
@@ -94,7 +98,18 @@ export default function AdminDashboardClient({
   currentAdminRole,
 }: AdminProps) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "stats" | "ads" | "servers" | "categories" | "blog" | "users" | "settings" | "logs" | "promotions"
+    | "overview"
+    | "stats"
+    | "ads"
+    | "servers"
+    | "categories"
+    | "blog"
+    | "users"
+    | "settings"
+    | "logs"
+    | "promotions"
+    | "page-seo"
+    | "sitemap"
   >("overview");
 
   // State
@@ -753,7 +768,43 @@ export default function AdminDashboardClient({
               }`}
             >
               <Settings className="w-4 h-4" />
-              <span>Site & SEO Config</span>
+              <span>General Site Settings</span>
+            </button>
+
+            {/* TAB: PAGE SEO CONTROL */}
+            <button
+              onClick={() => setActiveTab("page-seo")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+                activeTab === "page-seo"
+                  ? "bg-discord-blurple text-white shadow-glow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <FileText className="w-4 h-4 text-cyan-400" />
+                <span>Page Titles & SEO</span>
+              </div>
+              <span className="text-[10px] text-cyan-400 font-bold bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-md">
+                13 Pages
+              </span>
+            </button>
+
+            {/* TAB: SITEMAP CONTROL */}
+            <button
+              onClick={() => setActiveTab("sitemap")}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+                activeTab === "sitemap"
+                  ? "bg-discord-blurple text-white shadow-glow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Compass className="w-4 h-4 text-emerald-400" />
+                <span>Sitemap Control</span>
+              </div>
+              <span className="text-[10px] text-emerald-400 font-mono">
+                /sitemap.xml
+              </span>
             </button>
 
             <button
@@ -3025,6 +3076,47 @@ export default function AdminDashboardClient({
               )}
             </div>
           </div>
+        )}
+
+        {/* ==================== TAB: PAGE SEO CONTROL ==================== */}
+        {activeTab === "page-seo" && (
+          <AdminPageSeoManager
+            settings={settings}
+            onSaveSettings={async (updatedSettings) => {
+              setSettings(updatedSettings);
+              const res = await fetch("/api/admin/settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ settings: updatedSettings }),
+              });
+              if (!res.ok) {
+                throw new Error("Failed to save settings");
+              }
+            }}
+            showToast={showToast}
+          />
+        )}
+
+        {/* ==================== TAB: SITEMAP CONTROL ==================== */}
+        {activeTab === "sitemap" && (
+          <AdminSitemapManager
+            settings={settings}
+            onSaveSettings={async (updatedSettings) => {
+              setSettings(updatedSettings);
+              const res = await fetch("/api/admin/settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ settings: updatedSettings }),
+              });
+              if (!res.ok) {
+                throw new Error("Failed to save settings");
+              }
+            }}
+            showToast={showToast}
+            serverCount={servers.length}
+            categoryCount={categories.length}
+            blogCount={blogPosts.length}
+          />
         )}
       </main>
 

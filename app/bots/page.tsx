@@ -4,6 +4,8 @@ import { BOT_CATEGORIES, getAllBots, DiscordBot } from "@/lib/botsData";
 import BotCard from "@/components/BotCard";
 import Pagination from "@/components/Pagination";
 import BotSEOContent from "@/components/BotSEOContent";
+import { getPageSeo } from "@/lib/seoSettings";
+import { SITE_URL } from "@/lib/seo";
 import {
   Bot,
   Shield,
@@ -20,14 +22,16 @@ import {
   Layers,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Best Discord Bots List 2026 - Top Discord Bots Directory | DiscordServerLink",
-  description:
-    "Explore the Best Discord Bots List 2026 to automate tasks on your server. Find pre-made bots for music, moderation, gaming, giveaways, verification, leveling, and AI chatbots.",
-  alternates: {
-    canonical: "https://discordserverlink.com/bots",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("bots");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/bots`,
+    },
+  };
+}
 
 const CATEGORY_ICON_MAP: Record<string, any> = {
   all: Bot,

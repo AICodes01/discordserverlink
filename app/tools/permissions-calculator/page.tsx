@@ -16,20 +16,24 @@ import {
 } from "lucide-react";
 import PermissionsCalculatorClient from "@/components/tools/PermissionsCalculatorClient";
 import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
-export const metadata: Metadata = {
-  title: "Discord Permissions Calculator: Bot Permission Integer & Invite URL Generator",
-  description:
-    "Discord Permissions Calculator: Calculate bitwise permission integers for Discord bots and server roles. Generate secure 1-click bot invite links with exact OAuth2 scopes and permissions. 100% free with no login required.",
-  alternates: {
-    canonical: `${SITE_URL}/tools/permissions-calculator`,
-  },
-  openGraph: {
-    title: "Discord Permissions Calculator: Bot Permission Integer & Invite URL Generator",
-    description:
-      "Calculate Discord bot permission integers and generate 1-click OAuth2 bot invite links. Visual bitwise calculator for server admins and bot developers.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("tool_permissions_calculator");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/tools/permissions-calculator`,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+    },
+  };
+}
 
 export default function PermissionsCalculatorPage() {
   const breadcrumbs = generateBreadcrumbSchema([

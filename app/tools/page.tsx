@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { getPageSeo } from "@/lib/seoSettings";
+import { SITE_URL } from "@/lib/seo";
 import {
   Wrench,
   Link2,
@@ -14,14 +16,18 @@ import {
   User,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Free Discord Tools & Utilities 2026 - DiscordServerLink",
-  description:
-    "Collection of free Discord tools: Discord PFP Viewer & Grabber, Discord Invite Link Inspector, Permissions Calculator, Snowflake to Timestamp ID Finder, Colored ANSI Text Formatter, Webhook Sender, and Fancy Fonts.",
-  alternates: {
-    canonical: "https://discordserverlink.com/tools",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("tools");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/tools`,
+    },
+  };
+}
 
 interface ToolItem {
   id: string;

@@ -6,6 +6,7 @@ import { Search, Filter, Layers, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 
 import { SITE_URL } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
 interface ServersPageProps {
   searchParams: {
@@ -21,15 +22,16 @@ export async function generateMetadata({ searchParams }: ServersPageProps): Prom
   const query = searchParams.q?.trim() || "";
   const page = Math.max(1, parseInt(searchParams.page || "1", 10));
   const hasFilter = Boolean(query || (searchParams.sort && searchParams.sort !== "bumped"));
+  const seo = await getPageSeo("servers");
 
-  let title = "Explore Discord Servers 2026 - Search & Browse Communities";
-  let description = "Search and discover thousands of active Discord servers by topic, game, tags, and category on discordserverlink.com.";
+  let title = seo.title;
+  let description = seo.description;
 
   if (query) {
     title = `Search results for "${query}" - Discord Servers`;
     description = `Find active Discord servers matching "${query}". Join public voice chats, gaming guilds, and developer communities.`;
   } else if (page > 1) {
-    title = `Explore Discord Servers 2026 - Page ${page} | DiscordServerLink`;
+    title = `${seo.title} - Page ${page}`;
   }
 
   const canonical = page > 1 ? `${SITE_URL}/servers?page=${page}` : `${SITE_URL}/servers`;

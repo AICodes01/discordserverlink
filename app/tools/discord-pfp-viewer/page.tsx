@@ -13,20 +13,24 @@ import {
 } from "lucide-react";
 import DiscordPfpViewerClient from "@/components/tools/DiscordPfpViewerClient";
 import { SITE_URL, generateBreadcrumbSchema } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 
-export const metadata: Metadata = {
-  title: "Discord PFP Viewer & Grabber: Discord Profile Picture Downloader",
-  description:
-    "Discord PFP Viewer & Grabber, Discord Profile Picture Downloader: View and download any Discord user's profile picture and server banner in original high quality (1024x1024) or animated GIF using their User ID.",
-  alternates: {
-    canonical: `${SITE_URL}/tools/discord-pfp-viewer`,
-  },
-  openGraph: {
-    title: "Discord PFP Viewer & Grabber: Discord Profile Picture Downloader",
-    description:
-      "Free tool to view and download any Discord user avatar and server banner in HD 1024x1024 or animated GIF. 100% anonymous & no login required.",
-  },
-};
+export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("tool_discord_pfp_viewer");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: `${SITE_URL}/tools/discord-pfp-viewer`,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+    },
+  };
+}
 
 export default function DiscordPfpViewerPage() {
   const breadcrumbs = generateBreadcrumbSchema([

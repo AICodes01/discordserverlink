@@ -6,6 +6,7 @@ import BlogSlider from "@/components/BlogSlider";
 import HomeSEOContent from "@/components/HomeSEOContent";
 import { getAllPosts } from "@/lib/blog";
 import { generateItemListSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
+import { getPageSeo } from "@/lib/seoSettings";
 import {
   Compass,
   Sparkles,
@@ -25,36 +26,36 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Discord Servers List (2026) - Find, Join & Promote Top Communities | DiscordServerLink",
-  description:
-    "Explore 5,300+ active Discord servers. Find gaming squads, anime hubs, coding groups, and chill voice chats. Join instantly or add your server for free on discordserverlink.com!",
-  alternates: {
-    canonical: SITE_URL,
-  },
-  openGraph: {
-    title: "Discord Servers List 2026 - Best Discord Servers to Join",
-    description:
-      "Explore 5,300+ active Discord servers with direct invite links, member counts, and live bumps. Add your server for free on DiscordServerLink.",
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: `${SITE_NAME} - Top Discord Server Directory`,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Discord Servers List 2026 - DiscordServerLink",
-    description:
-      "Discover active Discord servers for gaming, anime, tech, and chill chats.",
-    images: ["/og-image.png"],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("home");
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: SITE_URL,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+      url: SITE_URL,
+      siteName: SITE_NAME,
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: `${SITE_NAME} - Top Discord Server Directory`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.title,
+      description: seo.description,
+      images: ["/og-image.png"],
+    },
+  };
+}
 
 // Icon mapping for categories
 const categoryIcons: Record<string, any> = {
