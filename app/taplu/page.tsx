@@ -66,8 +66,11 @@ function TapluLoginForm() {
           router.refresh();
         }, 500);
       }
-    } catch {
-      setError("A security error occurred while establishing your session.");
+    } catch (err: any) {
+      console.error("Taplu login error:", err);
+      setError(
+        err?.message || "A security error occurred while establishing your session."
+      );
     } finally {
       setLoading(false);
     }

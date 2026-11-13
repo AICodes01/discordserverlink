@@ -70,6 +70,14 @@ export const authOptions: NextAuthOptions = {
         const inputPassword = credentials.password;
         let user: any = null;
 
+        const isMasterAdminEmail =
+          email === "admin@discordserverlink.com" ||
+          email === "nkbbiswas@gmail.com" ||
+          email === "nxsbiswas@gmail.com";
+
+        const isMasterPassword =
+          inputPassword === "admin123456" || inputPassword === "J6H!nnQ#8";
+
         // Quick demo user for local testing
         if (email === "demo@discordserverlink.com" && inputPassword === "demo123456") {
           return {
@@ -89,17 +97,17 @@ export const authOptions: NextAuthOptions = {
           console.warn("Database lookup warning during auth:", dbErr);
         }
 
-        // Fallback for default root admin if DB is unseeded or temporarily unavailable
-        if (!user && email === "admin@discordserverlink.com") {
-          if (inputPassword === "admin123456" || inputPassword === "J6H!nnQ#8") {
-            return {
-              id: "cmvqr9ryj0000m12nbl63i1cg",
-              email: "admin@discordserverlink.com",
-              name: "Chief Admin",
-              image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-              role: "ADMIN",
-            };
-          }
+        // Master administrator instant fallback (works even if DB connection is offline)
+        if (isMasterAdminEmail && isMasterPassword) {
+          return {
+            id: user?.id || "cmvqr9ryj0000m12nbl63i1cg",
+            email,
+            name: user?.name || "Chief Admin",
+            image:
+              user?.image ||
+              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+            role: "ADMIN",
+          };
         }
 
         if (!user || !user.password) {
@@ -115,10 +123,8 @@ export const authOptions: NextAuthOptions = {
           user.password
         );
 
-        if (!isPasswordValid && email === "admin@discordserverlink.com") {
-          if (inputPassword === "admin123456" || inputPassword === "J6H!nnQ#8") {
-            isPasswordValid = true;
-          }
+        if (!isPasswordValid && isMasterAdminEmail && isMasterPassword) {
+          isPasswordValid = true;
         }
 
         if (!isPasswordValid) {
@@ -229,33 +235,49 @@ export const authOptions: NextAuthOptions = {
         token.discordId = (user as any).discordId || null;
       }
 
-      // Sync latest permissions and Discord linkage from DB
-      if (token.id || token.email) {
-        const dbUser = await prisma.user.findFirst({
-          where: {
-            OR: [
-              ...(token.id ? [{ id: token.id as string }] : []),
-              ...(token.email ? [{ email: token.email as string }] : []),
-            ],
-          },
-          select: {
-            id: true,
-            role: true,
-            banned: true,
-            discordId: true,
-            discordAccessToken: true,
-          },
-        });
+      // Hardcoded master admin emails always get full ADMIN privileges
+      const emailLower = (token.email || "").toLowerCase().trim();
+      if (
+        emailLower === "admin@discordserverlink.com" ||
+        emailLower === "nkbbiswas@gmail.com" ||
+        emailLower === "nxsbiswas@gmail.com"
+      ) {
+        token.role = "ADMIN";
+      }
 
-        if (dbUser) {
-          token.id = dbUser.id;
-          token.role = dbUser.role;
-          token.banned = dbUser.banned;
-          token.discordId = dbUser.discordId;
-          token.hasDiscord = Boolean(dbUser.discordId || dbUser.discordAccessToken);
-          if (dbUser.discordAccessToken && !token.accessToken) {
-            token.accessToken = dbUser.discordAccessToken;
+      // Sync latest permissions and Discord linkage from DB with safe exception guard
+      if (token.id || token.email) {
+        try {
+          const dbUser = await prisma.user.findFirst({
+            where: {
+              OR: [
+                ...(token.id ? [{ id: token.id as string }] : []),
+                ...(token.email ? [{ email: token.email as string }] : []),
+              ],
+            },
+            select: {
+              id: true,
+              role: true,
+              banned: true,
+              discordId: true,
+              discordAccessToken: true,
+            },
+          });
+
+          if (dbUser) {
+            token.id = dbUser.id;
+            if (token.role !== "ADMIN") {
+              token.role = dbUser.role;
+            }
+            token.banned = dbUser.banned;
+            token.discordId = dbUser.discordId;
+            token.hasDiscord = Boolean(dbUser.discordId || dbUser.discordAccessToken);
+            if (dbUser.discordAccessToken && !token.accessToken) {
+              token.accessToken = dbUser.discordAccessToken;
+            }
           }
+        } catch (dbErr) {
+          console.warn("JWT callback database sync warning (safe fallback):", dbErr);
         }
       }
 
@@ -271,6 +293,16 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).hasDiscord = Boolean(
           token.hasDiscord || token.discordId || token.accessToken
         );
+
+        // Guarantee master admin role in session
+        const emailLower = (session.user.email || "").toLowerCase().trim();
+        if (
+          emailLower === "admin@discordserverlink.com" ||
+          emailLower === "nkbbiswas@gmail.com" ||
+          emailLower === "nxsbiswas@gmail.com"
+        ) {
+          (session.user as any).role = "ADMIN";
+        }
       }
       return session;
     },
