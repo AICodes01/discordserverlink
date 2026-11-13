@@ -31,6 +31,8 @@ yarn-error.log*
 .env.production
 .env.development
 *.db-journal
+*.db-wal
+*.db-shm
 
 # vercel
 .vercel
