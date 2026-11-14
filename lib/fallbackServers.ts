@@ -180,6 +180,18 @@ export function findFallbackServer(slugOrId: string): FallbackServer | null {
 }
 
 /**
+ * Bump a server in memory: increment bump count and update lastBumpedAt to now
+ */
+export function bumpFallbackServer(slugOrId: string): FallbackServer | null {
+  const server = findFallbackServer(slugOrId);
+  if (!server) return null;
+
+  server.bumpsCount = (server.bumpsCount || 0) + 1;
+  server.lastBumpedAt = new Date().toISOString();
+  return server;
+}
+
+/**
  * Get category server count map
  */
 export function getFallbackCategoryCounts(): Record<string, number> {
@@ -249,7 +261,11 @@ export function queryFallbackServers(options: QueryServersOptions = {}) {
   }
 
   // Sorting
-  if (sort === "members") {
+  if (sort === "bumped") {
+    list = [...list].sort(
+      (a, b) => new Date(b.lastBumpedAt || 0).getTime() - new Date(a.lastBumpedAt || 0).getTime()
+    );
+  } else if (sort === "members") {
     list = [...list].sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0));
   } else if (sort === "newest") {
     list = [...list].sort(

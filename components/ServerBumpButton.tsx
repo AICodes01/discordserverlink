@@ -73,6 +73,7 @@ export default function ServerBumpButton({
       } else {
         setBumps((prev) => prev + 1);
         setCanBump(false);
+        setRemainingTime(`${cooldownHours}h 0m`);
         setStatusMsg("🚀 Bumped to top! Your server is now #1.");
       }
     } catch (err: any) {

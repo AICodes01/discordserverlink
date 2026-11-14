@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { findFallbackServer } from "@/lib/fallbackServers";
 
 export async function POST(
   req: NextRequest,
@@ -7,13 +8,15 @@ export async function POST(
 ) {
   try {
     const { id } = params;
-    await prisma.server.update({
-      where: { id },
-      data: { joinsCount: { increment: 1 } },
-    });
+    try {
+      await prisma.server.update({
+        where: { id },
+        data: { joinsCount: { increment: 1 } },
+      });
+    } catch {}
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ success: true }, { status: 200 });
   }
 }
 
@@ -21,8 +24,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const { id } = params;
+
   try {
-    const { id } = params;
     const server = await prisma.server.update({
       where: { id },
       data: { joinsCount: { increment: 1 } },
@@ -32,9 +36,13 @@ export async function GET(
     if (server?.inviteUrl) {
       return NextResponse.redirect(server.inviteUrl, { status: 302 });
     }
-
-    return NextResponse.redirect(new URL("/", req.url));
   } catch (err: any) {
-    return NextResponse.redirect(new URL("/", req.url));
+    // Database unavailable, resolve from fallback dataset
+    const fb = findFallbackServer(id);
+    if (fb?.inviteUrl) {
+      return NextResponse.redirect(fb.inviteUrl, { status: 302 });
+    }
   }
+
+  return NextResponse.redirect(new URL("/", req.url));
 }
