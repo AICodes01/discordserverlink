@@ -29,7 +29,16 @@ export default function ServerCard({ server }: ServerCardProps) {
     ? server.tags
         .split(",")
         .map((t) => t.trim())
-        .filter(Boolean)
+        .filter((t) => {
+          const lower = t.toLowerCase();
+          return (
+            Boolean(t) &&
+            lower !== "partner" &&
+            lower !== "partnered" &&
+            lower !== "partner server" &&
+            lower !== "featured"
+          );
+        })
         .slice(0, 3)
     : [];
 

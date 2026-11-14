@@ -137,9 +137,6 @@ export default async function HomePage() {
     categories = DEFAULT_CATEGORIES;
     const all = getAllFallbackServers();
     featuredServers = all.filter((s: any) => s.isFeatured).slice(0, 6);
-    if (featuredServers.length === 0) {
-      featuredServers = all.slice(0, 6);
-    }
     recentlyBumpedServers = all.slice(0, 12);
     totalServers = all.length || TOTAL_SERVERS_COUNT;
     totalMembers = 15400000;

@@ -195,7 +195,16 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
       ? server.tags
           .split(",")
           .map((t: string) => t.trim())
-          .filter(Boolean)
+          .filter((t: string) => {
+            const lower = t.toLowerCase();
+            return (
+              Boolean(t) &&
+              lower !== "partner" &&
+              lower !== "partnered" &&
+              lower !== "partner server" &&
+              lower !== "featured"
+            );
+          })
       : [];
 
   // Fetch category name

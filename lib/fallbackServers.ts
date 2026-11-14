@@ -112,6 +112,10 @@ export function getAllFallbackServers(): FallbackServer[] {
       const list: FallbackServer[] = JSON.parse(jsonStr);
 
       if (Array.isArray(list) && list.length > 0) {
+        for (let i = 0; i < list.length; i++) {
+          list[i].isFeatured = false;
+          list[i].isPartnered = false;
+        }
         cachedServers = list;
         buildLookupCaches(list);
         return cachedServers;
