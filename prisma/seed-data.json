@@ -326,13 +326,13 @@
     },
     {
       "key": "ads_txt_code",
-      "value": "",
+      "value": "google.com, pub-7551201031226261, DIRECT, f08c47fec0942fa0",
       "description": "Plain text served dynamically at /ads.txt for Google AdSense and ad exchanges",
       "updatedAt": "2026-11-13T06:33:52.751Z"
     },
     {
       "key": "adsense_client_id",
-      "value": "ca-pub-8893452174092183",
+      "value": "ca-pub-7551201031226261",
       "description": "Google AdSense Publisher ID",
       "updatedAt": "2026-11-13T06:33:52.753Z"
     },
@@ -392,7 +392,7 @@
     },
     {
       "key": "head_code",
-      "value": "<!-- Google tag (gtag.js) / AdSense Auto Ads Script -->\n<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8893452174092183\" crossorigin=\"anonymous\"></script>\n<meta name=\"google-site-verification\" content=\"GSC-DISCORD-SERVER-LINK-VERIFICATION-TOKEN-2026\" />",
+      "value": "<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7551201031226261\" crossorigin=\"anonymous\"></script>",
       "description": "Custom scripts and meta tags injected into HTML <head>",
       "updatedAt": "2026-11-13T06:33:52.773Z"
     },

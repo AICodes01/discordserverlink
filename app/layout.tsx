@@ -93,7 +93,16 @@ export default async function RootLayout({
       return acc;
     }, {} as Record<string, string>);
   } catch (e) {
-    // Graceful fallback if database is updating
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const seed = require("@/prisma/seed-data.json");
+      if (Array.isArray(seed.siteSettings)) {
+        settingsMap = seed.siteSettings.reduce((acc: any, curr: any) => {
+          acc[curr.key] = curr.value;
+          return acc;
+        }, {} as Record<string, string>);
+      }
+    } catch {}
   }
 
   const headCode = settingsMap.head_code || "";

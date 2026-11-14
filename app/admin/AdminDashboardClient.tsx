@@ -1587,7 +1587,7 @@ export default function AdminDashboardClient({
                   </label>
                   <input
                     type="text"
-                    placeholder="ca-pub-8893452174092183"
+                    placeholder="ca-pub-7551201031226261"
                     value={settings.adsense_client_id || ""}
                     onChange={(e) =>
                       setSettings({ ...settings, adsense_client_id: e.target.value })
@@ -1816,7 +1816,7 @@ export default function AdminDashboardClient({
 
               <textarea
                 rows={5}
-                placeholder="google.com, pub-8893452174092183, DIRECT, f08c47fec0942fa0"
+                placeholder="google.com, pub-7551201031226261, DIRECT, f08c47fec0942fa0"
                 value={settings.ads_txt_code || ""}
                 onChange={(e) =>
                   setSettings({ ...settings, ads_txt_code: e.target.value })
@@ -1829,7 +1829,7 @@ export default function AdminDashboardClient({
                 <button
                   type="button"
                   onClick={() => {
-                    const snippet = `google.com, ${settings.adsense_client_id || "pub-8893452174092183"}, DIRECT, f08c47fec0942fa0`;
+                    const snippet = `google.com, ${settings.adsense_client_id || "pub-7551201031226261"}, DIRECT, f08c47fec0942fa0`;
                     setSettings({ ...settings, ads_txt_code: snippet });
                     showToast("Pasted default AdSense ads.txt format!");
                   }}
