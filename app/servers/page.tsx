@@ -7,6 +7,12 @@ import type { Metadata } from "next";
 
 import { SITE_URL } from "@/lib/seo";
 import { getPageSeo } from "@/lib/seoSettings";
+import {
+  queryFallbackServers,
+  getFallbackCategoryCounts,
+  DEFAULT_CATEGORIES,
+  TOTAL_SERVERS_COUNT,
+} from "@/lib/fallbackServers";
 
 interface ServersPageProps {
   searchParams: {
@@ -97,7 +103,7 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
 
   let servers: any[] = [];
   let totalCount = 0;
-  let allServersCount = 5306;
+  let allServersCount = TOTAL_SERVERS_COUNT;
   let categories: any[] = [];
   let countMap: Record<string, number> = {};
 
@@ -123,7 +129,7 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
 
     servers = dbServers;
     totalCount = dbTotal;
-    allServersCount = dbAllCount || 5306;
+    allServersCount = dbAllCount || TOTAL_SERVERS_COUNT;
     categories = dbCats;
     countMap = catCounts.reduce((acc: any, curr: any) => {
       acc[curr.categorySlug] = curr._count.id;
@@ -131,68 +137,22 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
     }, {});
 
     if (categories.length === 0 || servers.length === 0 || allServersCount === 0) {
-      throw new Error("No data in DB, use seed fallback");
+      throw new Error("No data in DB, use fallback");
     }
   } catch {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      categories = seed.categories || [];
-      const seedServers: any[] = seed.servers || [];
-      allServersCount = seedServers.length;
-
-      // Populate countMap from seed data
-      seedServers.forEach((s: any) => {
-        if (s.categorySlug) {
-          countMap[s.categorySlug] = (countMap[s.categorySlug] || 0) + 1;
-        }
-      });
-
-      let list = seedServers;
-      if (category) {
-        list = list.filter(
-          (s: any) => s.categorySlug?.toLowerCase() === category.toLowerCase()
-        );
-      }
-      if (tag) {
-        list = list.filter((s: any) =>
-          s.tags?.toLowerCase().includes(tag.toLowerCase())
-        );
-      }
-      if (query) {
-        const q = query.toLowerCase();
-        list = list.filter(
-          (s: any) =>
-            s.name?.toLowerCase().includes(q) ||
-            s.shortDescription?.toLowerCase().includes(q) ||
-            s.tags?.toLowerCase().includes(q)
-        );
-      }
-
-      // In-memory sort
-      if (sort === "members") {
-        list = [...list].sort(
-          (a: any, b: any) => (b.memberCount || 0) - (a.memberCount || 0)
-        );
-      } else if (sort === "newest") {
-        list = [...list].sort(
-          (a: any, b: any) =>
-            new Date(b.createdAt || 0).getTime() -
-            new Date(a.createdAt || 0).getTime()
-        );
-      } else if (sort === "popular") {
-        list = [...list].sort(
-          (a: any, b: any) => (b.joinsCount || 0) - (a.joinsCount || 0)
-        );
-      } else if (sort === "bumps") {
-        list = [...list].sort(
-          (a: any, b: any) => (b.bumpsCount || 0) - (a.bumpsCount || 0)
-        );
-      }
-
-      totalCount = list.length;
-      servers = list.slice(skip, skip + limit);
-    } catch {}
+    categories = DEFAULT_CATEGORIES;
+    countMap = getFallbackCategoryCounts();
+    const result = queryFallbackServers({
+      query,
+      category,
+      tag,
+      sort,
+      skip,
+      limit,
+    });
+    servers = result.servers;
+    totalCount = result.totalCount;
+    allServersCount = result.allServersCount;
   }
 
   const totalPages = Math.ceil(totalCount / limit);

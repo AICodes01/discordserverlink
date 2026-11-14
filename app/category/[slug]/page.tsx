@@ -14,6 +14,12 @@ import {
 } from "@/lib/seo";
 import { CATEGORY_DATA, CategoryDetails } from "@/lib/categoryContent";
 import {
+  queryFallbackServers,
+  getFallbackCategoryCounts,
+  DEFAULT_CATEGORIES,
+  TOTAL_SERVERS_COUNT,
+} from "@/lib/fallbackServers";
+import {
   Sparkles,
   Bot,
   ShieldAlert,
@@ -157,11 +163,7 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
       where: { slug: resolvedSlug },
     });
   } catch {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      category = (seed.categories || []).find((c: any) => c.slug === resolvedSlug) || null;
-    } catch {}
+    category = DEFAULT_CATEGORIES.find((c: any) => c.slug === resolvedSlug) || null;
   }
 
   if (!category) {
@@ -212,7 +214,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
   let totalCount = 0;
   let allCategories: any[] = [];
   let countMap: Record<string, number> = {};
-  let globalTotal = 5306;
+  let globalTotal = TOTAL_SERVERS_COUNT;
 
   const page = Math.max(1, parseInt(searchParams?.page || "1", 10));
   const limit = 24;
@@ -236,7 +238,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
 
     category = dbCat;
     allCategories = dbCats;
-    globalTotal = dbGlobalTotal || 5306;
+    globalTotal = dbGlobalTotal || TOTAL_SERVERS_COUNT;
     countMap = catCounts.reduce((acc: any, curr: any) => {
       acc[curr.categorySlug] = curr._count.id;
       return acc;
@@ -263,33 +265,24 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
       servers = dbServers;
       totalCount = dbTotal;
       if (totalCount === 0 || servers.length === 0) {
-        throw new Error("Category has 0 servers in DB, using seed fallback");
+        throw new Error("Category has 0 servers in DB, using fallback");
       }
     }
   } catch {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      allCategories = seed.categories || [];
-      category = (allCategories || []).find((c: any) => c.slug === resolvedSlug) || null;
-      const seedServers: any[] = seed.servers || [];
-      globalTotal = seedServers.length;
+    allCategories = DEFAULT_CATEGORIES;
+    category = allCategories.find((c: any) => c.slug === resolvedSlug) || null;
+    countMap = getFallbackCategoryCounts();
+    globalTotal = TOTAL_SERVERS_COUNT;
 
-      countMap = {};
-      seedServers.forEach((s: any) => {
-        if (s.categorySlug) {
-          countMap[s.categorySlug] = (countMap[s.categorySlug] || 0) + 1;
-        }
+    if (category) {
+      const result = queryFallbackServers({
+        category: category.slug,
+        skip,
+        limit,
       });
-
-      if (category) {
-        const catServers = seedServers.filter(
-          (s: any) => s.categorySlug?.toLowerCase() === category.slug.toLowerCase()
-        );
-        totalCount = catServers.length;
-        servers = catServers.slice(skip, skip + limit);
-      }
-    } catch {}
+      servers = result.servers;
+      totalCount = result.totalCount;
+    }
   }
 
   if (!category) {

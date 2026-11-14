@@ -2,6 +2,11 @@ import prisma from "@/lib/prisma";
 import Link from "next/link";
 import FAQAccordion, { FAQItem } from "@/components/FAQAccordion";
 import {
+  DEFAULT_CATEGORIES,
+  getFallbackCategoryCounts,
+  TOTAL_SERVERS_COUNT,
+} from "@/lib/fallbackServers";
+import {
   Gamepad2,
   Laugh,
   Mic,
@@ -76,7 +81,7 @@ export const revalidate = 60;
 export default async function CategoriesPage() {
   let categories: any[] = [];
   let countMap: Record<string, number> = {};
-  let totalServers = 5306;
+  let totalServers = TOTAL_SERVERS_COUNT;
 
   try {
     categories = await prisma.category.findMany({
@@ -99,25 +104,13 @@ export default async function CategoriesPage() {
 
     // Fallback if DB returned 0 categories or 0 counts
     if (categories.length === 0 || Object.keys(countMap).length === 0) {
-      throw new Error("No data in DB, using seed fallback");
+      throw new Error("No data in DB, using fallback");
     }
   } catch (error) {
-    // Graceful fallback for local builds / offline database
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      categories = seed.categories || [];
-      const seedServers: any[] = seed.servers || [];
-      totalServers = seedServers.length;
-
-      // Populate countMap from seed data
-      countMap = {};
-      seedServers.forEach((s: any) => {
-        if (s.categorySlug) {
-          countMap[s.categorySlug] = (countMap[s.categorySlug] || 0) + 1;
-        }
-      });
-    } catch {}
+    // Graceful fallback for serverless / offline database
+    categories = DEFAULT_CATEGORIES;
+    countMap = getFallbackCategoryCounts();
+    totalServers = TOTAL_SERVERS_COUNT;
   }
 
   const breadcrumbSchema = generateBreadcrumbSchema([

@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getAllPosts } from "@/lib/blog";
 import AdminDashboardClient from "./AdminDashboardClient";
+import {
+  getAllFallbackServers,
+  DEFAULT_CATEGORIES,
+  TOTAL_SERVERS_COUNT,
+} from "@/lib/fallbackServers";
 
 export const dynamic = "force-dynamic";
 
@@ -154,12 +159,16 @@ export default async function AdminPage() {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const seed = require("@/prisma/seed-data.json");
-      servers = seed.servers || [];
-      categories = seed.categories || [];
+      categories = seed.categories || DEFAULT_CATEGORIES;
       users = seed.users || [];
       settings = seed.siteSettings || [];
-      stats = [servers.length, 0, { _sum: { memberCount: 50000 } }, 120, users.length];
-    } catch {}
+      servers = getAllFallbackServers();
+      stats = [servers.length || TOTAL_SERVERS_COUNT, 0, { _sum: { memberCount: 15400000 } }, 84000, users.length || 5];
+    } catch {
+      categories = DEFAULT_CATEGORIES;
+      servers = getAllFallbackServers();
+      stats = [TOTAL_SERVERS_COUNT, 0, { _sum: { memberCount: 15400000 } }, 84000, 5];
+    }
     blogPosts = await getAllPosts();
   }
 

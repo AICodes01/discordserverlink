@@ -6,13 +6,13 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("Reading data from local SQLite database...");
-  const [users, categories, siteSettings, videoItems, servers] =
+  const [users, categories, siteSettings, videoItems, sampleServers] =
     await Promise.all([
       prisma.user.findMany(),
       prisma.category.findMany(),
       prisma.siteSetting.findMany(),
       prisma.videoItem.findMany(),
-      prisma.server.findMany(),
+      prisma.server.findMany({ take: 50 }),
     ]);
 
   const payload = {
@@ -20,16 +20,16 @@ async function main() {
     categories,
     siteSettings,
     videoItems,
-    servers,
+    servers: sampleServers,
   };
 
   const outputPath = path.join(__dirname, "..", "prisma", "seed-data.json");
-  fs.writeFileSync(outputPath, JSON.stringify(payload));
+  fs.writeFileSync(outputPath, JSON.stringify(payload, null, 2));
   const stats = fs.statSync(outputPath);
 
-  console.log("✅ Successfully exported to prisma/seed-data.json!");
-  console.log(`   - File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
-  console.log(`   - Servers: ${servers.length}`);
+  console.log("✅ Successfully exported compact seed-data.json!");
+  console.log(`   - File size: ${(stats.size / 1024).toFixed(2)} KB`);
+  console.log(`   - Sample Servers: ${sampleServers.length}`);
   console.log(`   - Categories: ${categories.length}`);
   console.log(`   - Users: ${users.length}`);
   console.log(`   - Site Settings: ${siteSettings.length}`);

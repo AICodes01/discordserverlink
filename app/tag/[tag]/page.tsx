@@ -11,6 +11,7 @@ import {
   generateBreadcrumbSchema,
   generateFAQSchema,
 } from "@/lib/seo";
+import { queryFallbackServers } from "@/lib/fallbackServers";
 import {
   Tag as TagIcon,
   Sparkles,
@@ -146,15 +147,13 @@ export default async function TagDetailPage({ params, searchParams }: TagPagePro
     servers = dbServers;
     totalCount = dbTotal;
   } catch {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      const matched = (seed.servers || []).filter(
-        (s: any) => s.tags && s.tags.toLowerCase().includes(tagName)
-      );
-      totalCount = matched.length;
-      servers = matched.slice(skip, skip + limit);
-    } catch {}
+    const result = queryFallbackServers({
+      tag: tagName,
+      skip,
+      limit,
+    });
+    servers = result.servers;
+    totalCount = result.totalCount;
   }
 
   const totalPages = Math.ceil(totalCount / limit);

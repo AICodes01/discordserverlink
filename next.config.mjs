@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    outputFileTracingIncludes: {
+      "/**": ["./prisma/servers-31k.json.gz"],
+    },
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },

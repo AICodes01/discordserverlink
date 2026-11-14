@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { findFallbackServer, queryFallbackServers } from "@/lib/fallbackServers";
 import {
   Users,
   CheckCircle2,
@@ -49,11 +50,7 @@ export async function generateMetadata({ params }: ServerPageProps): Promise<Met
       },
     });
   } catch {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      server = (seed.servers || []).find((s: any) => s.slug === params.slug) || null;
-    } catch {}
+    server = findFallbackServer(params.slug);
   }
 
   if (!server) {
@@ -140,17 +137,14 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
       });
     }
   } catch {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      server = (seed.servers || []).find((s: any) => s.slug === params.slug) || null;
-      if (server) {
-        similarServers = (seed.servers || [])
-          .filter((s: any) => s.categorySlug === server.categorySlug && s.slug !== server.slug)
-          .slice(0, 3);
-        if (!server.reviews) server.reviews = [];
-      }
-    } catch {}
+    server = findFallbackServer(params.slug);
+    if (server) {
+      similarServers = queryFallbackServers({
+        category: server.categorySlug,
+        limit: 4,
+      }).servers.filter((s) => s.slug !== server.slug).slice(0, 3);
+      if (!server.reviews) server.reviews = [];
+    }
   }
 
   if (!server) {

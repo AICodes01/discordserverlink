@@ -8,6 +8,11 @@ import { getAllPosts } from "@/lib/blog";
 import { generateItemListSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
 import { getPageSeo } from "@/lib/seoSettings";
 import {
+  getAllFallbackServers,
+  DEFAULT_CATEGORIES,
+  TOTAL_SERVERS_COUNT,
+} from "@/lib/fallbackServers";
+import {
   Compass,
   Sparkles,
   TrendingUp,
@@ -75,9 +80,9 @@ export default async function HomePage() {
   let featuredServers: any[] = [];
   let recentlyBumpedServers: any[] = [];
   let categories: any[] = [];
-  let totalServers = 120;
-  let totalMembers = 350000;
-  let totalBumps = 12000;
+  let totalServers = TOTAL_SERVERS_COUNT;
+  let totalMembers = 15400000;
+  let totalBumps = 84000;
   let latestBlogPosts: any[] = [];
 
   try {
@@ -123,20 +128,22 @@ export default async function HomePage() {
     recentlyBumpedServers = dbRecent;
     categories = dbCategories;
     const [totalServersCount, totalMembersSum, totalBumpsCount] = totalStats;
-    totalServers = totalServersCount || 120;
-    totalMembers = totalMembersSum._sum.memberCount || 350000;
-    totalBumps = totalBumpsCount || 12000;
+    totalServers = totalServersCount || TOTAL_SERVERS_COUNT;
+    totalMembers = totalMembersSum._sum.memberCount || 15400000;
+    totalBumps = totalBumpsCount || 84000;
     latestBlogPosts = allBlogPosts;
   } catch (error) {
-    // Graceful fallback for local builds / offline database
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      categories = seed.categories || [];
-      featuredServers = (seed.servers || []).filter((s: any) => s.isFeatured).slice(0, 6);
-      recentlyBumpedServers = (seed.servers || []).slice(0, 12);
-      totalServers = seed.servers ? seed.servers.length : 120;
-    } catch {}
+    // Graceful fallback for serverless builds / offline database
+    categories = DEFAULT_CATEGORIES;
+    const all = getAllFallbackServers();
+    featuredServers = all.filter((s: any) => s.isFeatured).slice(0, 6);
+    if (featuredServers.length === 0) {
+      featuredServers = all.slice(0, 6);
+    }
+    recentlyBumpedServers = all.slice(0, 12);
+    totalServers = all.length || TOTAL_SERVERS_COUNT;
+    totalMembers = 15400000;
+    totalBumps = 84000;
     const allBlogPosts = await getAllPosts();
     latestBlogPosts = allBlogPosts;
   }

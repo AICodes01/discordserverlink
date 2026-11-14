@@ -4,18 +4,19 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import slugify from "slugify";
 import { evaluateServerModeration } from "@/lib/moderation";
+import { queryFallbackServers } from "@/lib/fallbackServers";
 
 export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const query = searchParams.get("q") || "";
-    const category = searchParams.get("category") || "";
-    const tag = searchParams.get("tag") || "";
-    const sort = searchParams.get("sort") || "bumped"; // bumped, members, newest, popular
-    const limit = parseInt(searchParams.get("limit") || "24", 10);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const skip = (page - 1) * limit;
+  const { searchParams } = new URL(req.url);
+  const query = searchParams.get("q") || "";
+  const category = searchParams.get("category") || "";
+  const tag = searchParams.get("tag") || "";
+  const sort = searchParams.get("sort") || "bumped"; // bumped, members, newest, popular
+  const limit = parseInt(searchParams.get("limit") || "24", 10);
+  const page = parseInt(searchParams.get("page") || "1", 10);
+  const skip = (page - 1) * limit;
 
+  try {
     const where: any = {
       status: "APPROVED",
     };
@@ -82,8 +83,21 @@ export async function GET(req: NextRequest) {
       totalPages: Math.ceil(total / limit),
     });
   } catch (error: any) {
-    console.error("Servers fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch servers" }, { status: 500 });
+    console.warn("Falling back to offline servers dataset in api/servers:", error?.message);
+    const result = queryFallbackServers({
+      query: query || undefined,
+      category: category || undefined,
+      tag: tag || undefined,
+      sort: sort || undefined,
+      skip,
+      limit,
+    });
+    return NextResponse.json({
+      servers: result.servers,
+      total: result.totalCount,
+      page,
+      totalPages: Math.ceil(result.totalCount / limit),
+    });
   }
 }
 

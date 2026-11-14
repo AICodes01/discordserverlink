@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/seo";
 import { getAllBots } from "@/lib/botsData";
 import { getAllPostsSync } from "@/lib/blog";
 import { getSitemapConfig } from "@/lib/seoSettings";
+import { getAllFallbackServers, DEFAULT_CATEGORIES } from "@/lib/fallbackServers";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
@@ -121,7 +122,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: cfg.serversPriority,
         }));
       } catch (e) {
-        // fallback
+        // Fallback servers for sitemap
+        const fb = getAllFallbackServers().slice(0, cfg.serversLimit || 5000);
+        serverRoutes = fb.map((s) => ({
+          url: `${SITE_URL}/server/${s.slug}`,
+          lastModified: new Date(),
+          changeFrequency: cfg.serversFreq,
+          priority: cfg.serversPriority,
+        }));
       }
     }
 
@@ -140,7 +148,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: cfg.categoriesPriority,
         }));
       } catch (e) {
-        // fallback
+        categoryRoutes = DEFAULT_CATEGORIES.map((c) => ({
+          url: `${SITE_URL}/category/${c.slug}`,
+          lastModified: new Date(),
+          changeFrequency: cfg.categoriesFreq,
+          priority: cfg.categoriesPriority,
+        }));
       }
     }
 
