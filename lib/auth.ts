@@ -24,6 +24,7 @@ const hasGoogleConfig = Boolean(
 );
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET || "discordserverlink-super-secure-production-secret-2026",
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -37,7 +38,6 @@ export const authOptions: NextAuthOptions = {
           DiscordProvider({
             clientId: discordClientId!,
             clientSecret: discordClientSecret!,
-            issuer: "https://discord.com",
             authorization: {
               params: {
                 scope: "identify email guilds",
@@ -51,6 +51,13 @@ export const authOptions: NextAuthOptions = {
           GoogleProvider({
             clientId: googleClientId!,
             clientSecret: googleClientSecret!,
+            authorization: {
+              params: {
+                prompt: "consent",
+                access_type: "offline",
+                response_type: "code",
+              },
+            },
           }),
         ]
       : []),
@@ -143,85 +150,89 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === "discord" && profile) {
-        const discordProfile = profile as any;
-        const discordId = discordProfile.id;
-        const email = discordProfile.email || `${discordId}@discord.user`;
-        const format = discordProfile.avatar?.startsWith("a_") ? "gif" : "png";
-        const avatar = discordProfile.avatar
-          ? `https://cdn.discordapp.com/avatars/${discordId}/${discordProfile.avatar}.${format}`
-          : null;
+      try {
+        if (account?.provider === "discord" && profile) {
+          const discordProfile = profile as any;
+          const discordId = discordProfile.id;
+          const email = discordProfile.email || `${discordId}@discord.user`;
+          const format = discordProfile.avatar?.startsWith("a_") ? "gif" : "png";
+          const avatar = discordProfile.avatar
+            ? `https://cdn.discordapp.com/avatars/${discordId}/${discordProfile.avatar}.${format}`
+            : null;
 
-        const accessToken = account.access_token || null;
+          const accessToken = account.access_token || null;
 
-        // Find or upsert user
-        const existing = await prisma.user.findFirst({
-          where: {
-            OR: [{ discordId }, { email }],
-          },
-        });
-
-        let dbUser;
-        if (!existing) {
-          dbUser = await prisma.user.create({
-            data: {
-              discordId,
-              email,
-              name: discordProfile.global_name || discordProfile.username,
-              username: discordProfile.username,
-              discriminator: discordProfile.discriminator || "0",
-              image: avatar,
-              role: "USER",
-              discordAccessToken: accessToken,
+          // Find or upsert user
+          const existing = await prisma.user.findFirst({
+            where: {
+              OR: [{ discordId }, { email }],
             },
           });
-        } else {
-          dbUser = await prisma.user.update({
-            where: { id: existing.id },
-            data: {
-              discordId,
-              image: avatar || existing.image,
-              name: discordProfile.global_name || discordProfile.username || existing.name,
-              discordAccessToken: accessToken || existing.discordAccessToken,
-            },
+
+          let dbUser;
+          if (!existing) {
+            dbUser = await prisma.user.create({
+              data: {
+                discordId,
+                email,
+                name: discordProfile.global_name || discordProfile.username,
+                username: discordProfile.username,
+                discriminator: discordProfile.discriminator || "0",
+                image: avatar,
+                role: "USER",
+                discordAccessToken: accessToken,
+              },
+            });
+          } else {
+            dbUser = await prisma.user.update({
+              where: { id: existing.id },
+              data: {
+                discordId,
+                image: avatar || existing.image,
+                name: discordProfile.global_name || discordProfile.username || existing.name,
+                discordAccessToken: accessToken || existing.discordAccessToken,
+              },
+            });
+          }
+
+          user.id = dbUser.id;
+          (user as any).role = dbUser.role;
+          (user as any).discordId = dbUser.discordId;
+        } else if (account?.provider === "google" && profile) {
+          const googleProfile = profile as any;
+          const email = (googleProfile.email || user.email || "").toLowerCase().trim();
+          const avatar = googleProfile.picture || user.image || null;
+
+          const existing = await prisma.user.findUnique({
+            where: { email },
           });
+
+          let dbUser;
+          if (!existing) {
+            dbUser = await prisma.user.create({
+              data: {
+                email,
+                name: googleProfile.name || user.name || "Google User",
+                image: avatar,
+                role: "USER",
+              },
+            });
+          } else {
+            dbUser = await prisma.user.update({
+              where: { id: existing.id },
+              data: {
+                image: existing.image || avatar,
+                name: existing.name || googleProfile.name || user.name,
+              },
+            });
+          }
+
+          user.id = dbUser.id;
+          (user as any).role = dbUser.role;
+          (user as any).discordId = dbUser.discordId;
         }
-
-        user.id = dbUser.id;
-        (user as any).role = dbUser.role;
-        (user as any).discordId = dbUser.discordId;
-      } else if (account?.provider === "google" && profile) {
-        const googleProfile = profile as any;
-        const email = (googleProfile.email || user.email || "").toLowerCase().trim();
-        const avatar = googleProfile.picture || user.image || null;
-
-        const existing = await prisma.user.findUnique({
-          where: { email },
-        });
-
-        let dbUser;
-        if (!existing) {
-          dbUser = await prisma.user.create({
-            data: {
-              email,
-              name: googleProfile.name || user.name || "Google User",
-              image: avatar,
-              role: "USER",
-            },
-          });
-        } else {
-          dbUser = await prisma.user.update({
-            where: { id: existing.id },
-            data: {
-              image: existing.image || avatar,
-              name: existing.name || googleProfile.name || user.name,
-            },
-          });
-        }
-
-        user.id = dbUser.id;
-        (user as any).role = dbUser.role;
-        (user as any).discordId = dbUser.discordId;
+      } catch (authError) {
+        console.error("Resilient fallback in signIn callback:", authError);
       }
       return true;
     },
@@ -307,5 +318,4 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-discordserverlink",
 };
