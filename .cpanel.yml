@@ -1,0 +1,8 @@
+---
+deployment:
+  tasks:
+    - source $(find ~/nodevenv/discordserverlink -name "activate" 2>/dev/null | head -n 1 2>/dev/null || echo ".")
+    - npm install
+    - npx prisma generate
+    - npm run build
+    - mkdir -p tmp && touch tmp/restart.txt
