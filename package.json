@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/buildWithPrisma.js",
-    "start": "next start",
+    "start": "node server.js",
+    "next:start": "next start",
     "server": "node server.js",
     "postinstall": "prisma generate",
     "lint": "next lint",

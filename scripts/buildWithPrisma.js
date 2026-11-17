@@ -39,4 +39,4 @@ if (dbUrl && (dbUrl.startsWith("postgres") || dbUrl.startsWith("prisma+postgres"
 }
 
 console.log("3. Executing next build...");
-execSync("next build", { stdio: "inherit" });
+execSync("npx next build", { stdio: "inherit" });
