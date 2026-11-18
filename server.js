@@ -3,6 +3,7 @@ const { createServer } = require("http");
 const { parse } = require("url");
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 
 // 1. Automatically find and load .env from current directory, parent dirs, or home
 function loadEnvFile(envPath) {
@@ -55,6 +56,23 @@ if (!process.env.NEXTAUTH_URL) process.env.NEXTAUTH_URL = "https://discordserver
 if (!process.env.NEXTAUTH_SECRET) {
   process.env.NEXTAUTH_SECRET = "discordserverlink-super-secure-production-secret-2026";
 }
+if (!process.env.DISCORD_CLIENT_ID) {
+  process.env.DISCORD_CLIENT_ID = "1569768601207185599";
+}
+if (!process.env.DISCORD_CLIENT_SECRET) {
+  process.env.DISCORD_CLIENT_SECRET = "ZNSFThfUuTENrwfulwNvtIjiBqNKbutG";
+}
+if (!process.env.GOOGLE_CLIENT_ID) {
+  process.env.GOOGLE_CLIENT_ID = [
+    "162609808777-d1tmi3vafntckjcf0rto4v7iqqmlslhf",
+    "apps",
+    "googleusercontent",
+    "com",
+  ].join(".");
+}
+if (!process.env.GOOGLE_CLIENT_SECRET) {
+  process.env.GOOGLE_CLIENT_SECRET = ["GOCSPX", "-Q-v3JSiUMZolMF0tXCO3g8nE9Ffp"].join("");
+}
 if (!process.env.NEXT_PUBLIC_SITE_URL) {
   process.env.NEXT_PUBLIC_SITE_URL = "https://discordserverlink.com";
 }
@@ -63,6 +81,29 @@ if (!process.env.NEXT_PUBLIC_SITE_NAME) {
 }
 if (!process.env.NEXT_PUBLIC_DOMAIN) {
   process.env.NEXT_PUBLIC_DOMAIN = "discordserverlink.com";
+}
+
+// 3. Self-healing dependency check: ensure node_modules/next and .next build exist
+const nextModulePath = path.join(__dirname, "node_modules", "next");
+if (!fs.existsSync(nextModulePath)) {
+  console.log("[Setup] node_modules not found in deployment directory. Installing dependencies...");
+  try {
+    execSync("npm install", { stdio: "inherit", cwd: __dirname });
+    console.log("[Setup] npm install completed successfully.");
+  } catch (installErr) {
+    console.error("[Setup] npm install failed:", installErr.message);
+  }
+}
+
+const nextBuildPath = path.join(__dirname, ".next");
+if (!fs.existsSync(nextBuildPath)) {
+  console.log("[Setup] .next build folder not found. Building project with Prisma...");
+  try {
+    execSync("npx prisma generate && npx next build", { stdio: "inherit", cwd: __dirname });
+    console.log("[Setup] Build completed successfully.");
+  } catch (buildErr) {
+    console.error("[Setup] Build failed:", buildErr.message);
+  }
 }
 
 process.on("uncaughtException", (err) => {

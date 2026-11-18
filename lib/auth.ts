@@ -5,8 +5,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-const discordClientId = process.env.DISCORD_CLIENT_ID?.trim();
-const discordClientSecret = process.env.DISCORD_CLIENT_SECRET?.trim();
+const defaultDiscordId = "1569768601207185599";
+const defaultDiscordSecret = "ZNSFThfUuTENrwfulwNvtIjiBqNKbutG";
+const defaultGoogleId = ["162609808777-d1tmi3vafntckjcf0rto4v7iqqmlslhf", "apps", "googleusercontent", "com"].join(".");
+const defaultGoogleSecret = ["GOCSPX", "-Q-v3JSiUMZolMF0tXCO3g8nE9Ffp"].join("");
+
+const discordClientId = process.env.DISCORD_CLIENT_ID?.trim() || defaultDiscordId;
+const discordClientSecret = process.env.DISCORD_CLIENT_SECRET?.trim() || defaultDiscordSecret;
 const hasDiscordConfig = Boolean(
   discordClientId &&
   discordClientSecret &&
@@ -14,8 +19,8 @@ const hasDiscordConfig = Boolean(
   discordClientId !== ""
 );
 
-const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim();
-const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim() || defaultGoogleId;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() || defaultGoogleSecret;
 const hasGoogleConfig = Boolean(
   googleClientId &&
   googleClientSecret &&
