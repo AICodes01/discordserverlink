@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import ServerBumpButton from "@/components/ServerBumpButton";
 import ServerCard from "@/components/ServerCard";
-import ReviewForm from "./ReviewForm";
+import ServerReviews from "./ServerReviews";
 import ShareModalButton from "./ShareModalButton";
 import JoinButton from "@/components/JoinButton";
 import { generateServerSchema, generateBreadcrumbSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
@@ -444,66 +444,12 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
               )}
             </div>
 
-            {/* Reviews Section */}
-            <div className="rounded-3xl bg-zinc-900/60 border border-zinc-800 p-6 sm:p-8 space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Star className="w-5 h-5 text-amber-400 fill-current" />
-                  <span>Community Reviews ({reviewCount})</span>
-                </h2>
-                <div className="text-sm font-bold text-zinc-300">
-                  {avgRating} / 5.0 Rating
-                </div>
-              </div>
-
-              {/* Review Form */}
-              <ReviewForm serverId={server.id} />
-
-              {/* Review List */}
-              <div className="space-y-4 pt-4">
-                {server.reviews.map((rev: any) => (
-                  <div
-                    key={rev.id}
-                    className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        {rev.user.image ? (
-                          <img
-                            src={rev.user.image}
-                            alt={rev.user.name || "User"}
-                            className="w-8 h-8 rounded-full object-cover border border-zinc-700"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300">
-                            {rev.user.name?.slice(0, 2).toUpperCase() || "US"}
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-xs font-bold text-white">
-                            {rev.user.name || rev.user.username}
-                          </p>
-                          <p className="text-[10px] text-zinc-500">
-                            {new Date(rev.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Stars */}
-                      <div className="flex items-center gap-0.5 text-amber-400">
-                        {Array.from({ length: rev.rating }).map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                        ))}
-                      </div>
-                    </div>
-
-                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-                      {rev.content}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Reviews Section with Real-Time Comment Updates */}
+            <ServerReviews
+              serverId={server.id}
+              serverName={server.name}
+              initialReviews={server.reviews || []}
+            />
           </div>
 
           {/* Right Col: Sidebar with Bump Button & Info */}
