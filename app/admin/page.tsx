@@ -53,7 +53,7 @@ export default async function AdminPage() {
   try {
     const results = await Promise.all([
       prisma.server.findMany({
-        take: 100,
+        take: 25,
         orderBy: { createdAt: "desc" },
         include: {
           owner: {
@@ -86,6 +86,7 @@ export default async function AdminPage() {
       Promise.all([
         prisma.server.count(),
         prisma.server.count({ where: { status: "PENDING" } }),
+        prisma.server.count({ where: { status: "APPROVED" } }),
         prisma.server.aggregate({ _sum: { memberCount: true } }),
         prisma.bump.count(),
         prisma.user.count(),
@@ -140,12 +141,12 @@ export default async function AdminPage() {
       }),
     ]);
 
-    servers = (results[0] || []).slice(0, 100);
+    servers = (results[0] || []).slice(0, 25);
     if (results[1] && results[1].length > 0) categories = results[1];
     if (results[2] && results[2].length > 0) users = results[2];
     if (results[3] && results[3].length > 0) settings = results[3];
     auditLogs = results[4] || [];
-    stats = results[5] || [TOTAL_SERVERS_COUNT, 0, { _sum: { memberCount: 15400000 } }, 84000, 5];
+    stats = results[5] || [TOTAL_SERVERS_COUNT, 0, TOTAL_SERVERS_COUNT, { _sum: { memberCount: 15400000 } }, 84000, 5];
     viewsToday = results[6] || 0;
     viewsYesterday = results[7] || 0;
     totalViews = results[8] || 0;
@@ -164,10 +165,11 @@ export default async function AdminPage() {
     users = seedData.users || [];
     settings = seedData.siteSettings || [];
     const all = getAllFallbackServers();
-    servers = all.slice(0, 100);
+    servers = all.slice(0, 25);
     stats = [
       all.length || TOTAL_SERVERS_COUNT,
       0,
+      all.length || TOTAL_SERVERS_COUNT,
       { _sum: { memberCount: 15400000 } },
       84000,
       users.length || 5,
@@ -177,12 +179,13 @@ export default async function AdminPage() {
 
   // Ensure servers has initial data even if DB returned empty
   if (servers.length === 0) {
-    servers = getAllFallbackServers().slice(0, 100);
+    servers = getAllFallbackServers().slice(0, 25);
   }
 
   const [
     totalServers = TOTAL_SERVERS_COUNT,
     pendingServers = 0,
+    approvedServers = TOTAL_SERVERS_COUNT,
     totalMembersSum = { _sum: { memberCount: 15400000 } },
     totalBumps = 84000,
     totalUsers = 5,
@@ -222,6 +225,7 @@ export default async function AdminPage() {
   return (
     <AdminDashboardClient
       initialServers={servers}
+      initialTotalServerCount={totalServers || TOTAL_SERVERS_COUNT}
       initialCategories={categories}
       initialUsers={users}
       initialSettings={settingsMap}
@@ -232,6 +236,7 @@ export default async function AdminPage() {
       stats={{
         totalServers: totalServers || TOTAL_SERVERS_COUNT,
         pendingServers: pendingServers || 0,
+        approvedServers: approvedServers || (totalServers - pendingServers),
         totalMembers: totalMembersSum?._sum?.memberCount || 15400000,
         totalBumps: totalBumps || 84000,
         totalUsers: totalUsers || 5,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   ShieldAlert,
@@ -53,6 +53,7 @@ import AdminSitemapManager from "@/components/admin/AdminSitemapManager";
 
 interface AdminProps {
   initialServers: any[];
+  initialTotalServerCount?: number;
   initialCategories: any[];
   initialUsers: any[];
   initialSettings: Record<string, string>;
@@ -63,6 +64,7 @@ interface AdminProps {
   stats: {
     totalServers: number;
     pendingServers: number;
+    approvedServers?: number;
     totalMembers: number;
     totalBumps: number;
     totalUsers: number;
@@ -86,6 +88,7 @@ interface AdminProps {
 
 export default function AdminDashboardClient({
   initialServers = [],
+  initialTotalServerCount,
   initialCategories = [],
   initialUsers = [],
   initialSettings = {},
@@ -100,6 +103,7 @@ export default function AdminDashboardClient({
   const safeStats = {
     totalServers: stats?.totalServers || 31209,
     pendingServers: stats?.pendingServers || 0,
+    approvedServers: stats?.approvedServers ?? ((stats?.totalServers || 31209) - (stats?.pendingServers || 0)),
     totalMembers: stats?.totalMembers || 15400000,
     totalBumps: stats?.totalBumps || 84000,
     totalUsers: stats?.totalUsers || 5,
@@ -122,6 +126,10 @@ export default function AdminDashboardClient({
 
   // State
   const [servers, setServers] = useState(initialServers);
+  const [totalServerCount, setTotalServerCount] = useState(
+    initialTotalServerCount || safeStats.totalServers || 31209
+  );
+  const [serversLoading, setServersLoading] = useState(false);
   const [categories, setCategories] = useState(initialCategories);
   const [users, setUsers] = useState(initialUsers);
   const [settings, setSettings] = useState(initialSettings);
@@ -141,6 +149,49 @@ export default function AdminDashboardClient({
   const [serverTierFilter, setServerTierFilter] = useState<"ALL" | "normal" | "featured" | "partner">("ALL");
   const [serverPage, setServerPage] = useState(1);
   const serversPerPage = 25;
+
+  // Real-time server-side pagination & search across all 31,000+ servers
+  const isServerFirstMount = useRef(true);
+  useEffect(() => {
+    if (isServerFirstMount.current) {
+      isServerFirstMount.current = false;
+      return;
+    }
+
+    let isMounted = true;
+    const timer = setTimeout(async () => {
+      setServersLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: String(serverPage),
+          limit: String(serversPerPage),
+          status: serverStatusFilter,
+          tier: serverTierFilter,
+        });
+        if (serverSearch.trim()) {
+          params.set("q", serverSearch.trim());
+        }
+        const res = await fetch(`/api/admin/servers?${params.toString()}`);
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          setServers(data.servers || []);
+          if (typeof data.totalCount === "number") {
+            setTotalServerCount(data.totalCount);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin servers:", err);
+      } finally {
+        if (isMounted) setServersLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [serverPage, serverSearch, serverStatusFilter, serverTierFilter]);
+
   const [userSearch, setUserSearch] = useState("");
   const [pageSearch, setPageSearch] = useState("");
   const [pageSort, setPageSort] = useState<"today" | "yesterday" | "allTime">("today");
@@ -258,6 +309,7 @@ export default function AdminDashboardClient({
       });
       if (res.ok) {
         setServers((prev) => prev.filter((s) => s.id !== id));
+        setTotalServerCount((prev) => Math.max(0, prev - 1));
         showToast(`Server "${name}" deleted.`);
       } else {
         showToast("Failed to delete server", "error");
@@ -444,28 +496,12 @@ export default function AdminDashboardClient({
     }
   };
 
-  // Filtered servers with tier filter support
-  const filteredServers = servers.filter((s) => {
-    const matchesSearch =
-      s.name.toLowerCase().includes(serverSearch.toLowerCase()) ||
-      s.slug.toLowerCase().includes(serverSearch.toLowerCase()) ||
-      (s.guildId && s.guildId.includes(serverSearch));
-    const matchesStatus =
-      serverStatusFilter === "ALL" ? true : s.status === serverStatusFilter;
-    let matchesTier = true;
-    if (serverTierFilter === "featured") matchesTier = !!s.isFeatured;
-    else if (serverTierFilter === "partner") matchesTier = !!s.isPartnered;
-    else if (serverTierFilter === "normal") matchesTier = !s.isFeatured && !s.isPartnered;
-
-    return matchesSearch && matchesStatus && matchesTier;
-  });
-
-  // Server pagination values (25 per page)
-  const totalServerPages = Math.max(1, Math.ceil(filteredServers.length / serversPerPage));
+  // Server pagination values (25 per page across all 31,000+ servers)
+  const totalServerPages = Math.max(1, Math.ceil(totalServerCount / serversPerPage));
   const currentServerPage = Math.min(Math.max(1, serverPage), totalServerPages);
   const serverStartIndex = (currentServerPage - 1) * serversPerPage;
-  const serverEndIndex = Math.min(serverStartIndex + serversPerPage, filteredServers.length);
-  const paginatedServers = filteredServers.slice(serverStartIndex, serverEndIndex);
+  const serverEndIndex = Math.min(serverStartIndex + servers.length, totalServerCount);
+  const paginatedServers = servers;
 
   // Filtered and sorted page-wise stats
   const pageWiseList = (analytics?.pageWiseStats || [])
@@ -688,7 +724,7 @@ export default function AdminDashboardClient({
                 <span>Servers Directory</span>
               </div>
               <span className="text-[10px] text-zinc-500 font-mono">
-                {servers.length}
+                {safeStats.totalServers.toLocaleString("en-US")}
               </span>
             </button>
 
@@ -861,11 +897,11 @@ export default function AdminDashboardClient({
                   Total Servers
                 </span>
                 <p className="text-3xl font-black text-white mt-2">
-                  {servers.length}
+                  {safeStats.totalServers.toLocaleString("en-US")}
                 </p>
                 <div className="mt-2 text-[11px] text-discord-green font-medium flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{servers.filter((s) => s.status === "APPROVED").length} Approved & Live</span>
+                  <span>{safeStats.approvedServers.toLocaleString("en-US")} Approved & Live</span>
                 </div>
               </div>
 
@@ -1006,7 +1042,7 @@ export default function AdminDashboardClient({
                     onClick={() => setActiveTab("servers")}
                     className="text-xs text-discord-blurple hover:underline font-semibold"
                   >
-                    View All ({servers.length}) →
+                    View All ({safeStats.totalServers.toLocaleString("en-US")}) →
                   </button>
                 </div>
 
@@ -1961,7 +1997,7 @@ export default function AdminDashboardClient({
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-black text-white">
-                  Servers Directory ({servers.length})
+                  Servers Directory ({totalServerCount.toLocaleString("en-US")})
                 </h1>
                 <p className="text-xs sm:text-sm text-zinc-400 mt-1">
                   Approve, feature, edit, or remove Discord server listings
@@ -1980,7 +2016,7 @@ export default function AdminDashboardClient({
             </div>
 
             {/* Moderation Review Queue Quick Alert */}
-            {servers.filter((s) => s.status === "PENDING").length > 0 && (
+            {safeStats.pendingServers > 0 && (
               <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
@@ -1988,7 +2024,7 @@ export default function AdminDashboardClient({
                   </div>
                   <div>
                     <p className="text-sm font-bold text-white">
-                      {servers.filter((s) => s.status === "PENDING").length} Server(s) Awaiting Review
+                      {safeStats.pendingServers.toLocaleString("en-US")} Server(s) Awaiting Review
                     </p>
                     <p className="text-xs text-zinc-400">
                       These servers triggered automated filters (low member count, adult keywords, or scam phrases) and are held for admin approval.
@@ -2002,7 +2038,7 @@ export default function AdminDashboardClient({
                   }}
                   className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black text-xs transition shadow-sm shrink-0 cursor-pointer"
                 >
-                  Review Pending ({servers.filter((s) => s.status === "PENDING").length})
+                  Review Pending ({safeStats.pendingServers.toLocaleString("en-US")})
                 </button>
               </div>
             )}
@@ -2052,8 +2088,13 @@ export default function AdminDashboardClient({
                 <option value="partner">👑 Partner Only</option>
               </select>
 
-              <div className="text-xs text-zinc-400 font-medium ml-auto">
-                Showing {paginatedServers.length} of {filteredServers.length.toLocaleString("en-US")} (Page {currentServerPage} of {totalServerPages})
+              <div className="text-xs text-zinc-400 font-medium ml-auto flex items-center gap-2">
+                {serversLoading && (
+                  <span className="inline-block w-3 h-3 border-2 border-discord-blurple border-t-transparent rounded-full animate-spin" />
+                )}
+                <span>
+                  Showing {paginatedServers.length} of {totalServerCount.toLocaleString("en-US")} (Page {currentServerPage} of {totalServerPages})
+                </span>
               </div>
             </div>
 
@@ -2254,12 +2295,12 @@ export default function AdminDashboardClient({
             </div>
 
             {/* Pagination Controls */}
-            {filteredServers.length > 0 && (
+            {totalServerCount > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-xs">
                 <div className="text-zinc-400 font-medium">
                   Showing <span className="font-bold text-white">{(serverStartIndex + 1).toLocaleString("en-US")}</span> to{" "}
                   <span className="font-bold text-white">{serverEndIndex.toLocaleString("en-US")}</span> of{" "}
-                  <span className="font-bold text-discord-blurple">{filteredServers.length.toLocaleString("en-US")}</span> servers
+                  <span className="font-bold text-discord-blurple">{totalServerCount.toLocaleString("en-US")}</span> servers
                   <span className="text-zinc-600 ml-2">({serversPerPage} per page)</span>
                 </div>
 
@@ -3121,7 +3162,7 @@ export default function AdminDashboardClient({
               }
             }}
             showToast={showToast}
-            serverCount={servers.length}
+            serverCount={safeStats.totalServers}
             categoryCount={categories.length}
             blogCount={blogPosts.length}
           />

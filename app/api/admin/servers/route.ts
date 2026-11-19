@@ -19,12 +19,24 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || "ALL";
+    const tier = searchParams.get("tier") || "ALL";
     const q = (searchParams.get("q") || "").toLowerCase().trim();
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25", 10)));
+    const skip = (page - 1) * limit;
 
     try {
       const where: any = {};
       if (status !== "ALL") {
         where.status = status;
+      }
+      if (tier === "featured") {
+        where.isFeatured = true;
+      } else if (tier === "partner") {
+        where.isPartnered = true;
+      } else if (tier === "normal") {
+        where.isFeatured = false;
+        where.isPartnered = false;
       }
       if (q) {
         where.OR = [
@@ -34,23 +46,39 @@ export async function GET(req: NextRequest) {
         ];
       }
 
-      const servers = await prisma.server.findMany({
-        where,
-        take: 100,
-        orderBy: { createdAt: "desc" },
-        include: {
-          owner: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
+      const [servers, totalCount, totalServers, pendingServers, approvedServers] = await Promise.all([
+        prisma.server.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          include: {
+            owner: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
             },
           },
-        },
-      });
+        }),
+        prisma.server.count({ where }),
+        prisma.server.count(),
+        prisma.server.count({ where: { status: "PENDING" } }),
+        prisma.server.count({ where: { status: "APPROVED" } }),
+      ]);
 
-      return NextResponse.json({ servers });
+      return NextResponse.json({
+        servers,
+        totalCount,
+        totalServers,
+        pendingServers,
+        approvedServers,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      });
     } catch (dbErr) {
       console.warn("Falling back to in-memory servers in admin API:", dbErr);
       const all = getAllFallbackServers();
@@ -62,11 +90,25 @@ export async function GET(req: NextRequest) {
             s.slug.toLowerCase().includes(q) ||
             (s.guildId && s.guildId.includes(q));
           const matchesStatus = status === "ALL" || s.status === status;
-          return matchesQuery && matchesStatus;
-        })
-        .slice(0, 100);
+          let matchesTier = true;
+          if (tier === "featured") matchesTier = !!s.isFeatured;
+          else if (tier === "partner") matchesTier = !!s.isPartnered;
+          else if (tier === "normal") matchesTier = !s.isFeatured && !s.isPartnered;
+          return matchesQuery && matchesStatus && matchesTier;
+        });
 
-      return NextResponse.json({ servers: filtered });
+      const paginated = filtered.slice(skip, skip + limit);
+
+      return NextResponse.json({
+        servers: paginated,
+        totalCount: filtered.length,
+        totalServers: all.length,
+        pendingServers: all.filter((s) => s.status === "PENDING").length,
+        approvedServers: all.filter((s) => s.status === "APPROVED").length,
+        page,
+        limit,
+        totalPages: Math.ceil(filtered.length / limit),
+      });
     }
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
