@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import ServerCard from "@/components/ServerCard";
+import SponsorCard from "@/components/SponsorCard";
 import BlogSlider from "@/components/BlogSlider";
 import HomeSEOContent from "@/components/HomeSEOContent";
 import { getAllPosts } from "@/lib/blog";
@@ -125,6 +126,9 @@ export default async function HomePage() {
       ]);
 
     featuredServers = dbFeatured;
+    if (featuredServers.length === 0 && dbRecent.length > 0) {
+      featuredServers = dbRecent.slice(0, 3).map((s) => ({ ...s, isFeatured: true }));
+    }
     recentlyBumpedServers = dbRecent;
     categories = dbCategories;
     const [totalServersCount, totalMembersSum, totalBumpsCount] = totalStats;
@@ -246,20 +250,27 @@ export default async function HomePage() {
       {featuredServers.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                <Sparkles className="w-5 h-5 fill-current" />
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 rounded-2xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 text-violet-400 shadow-[0_0_20px_rgba(168,85,247,0.25)]">
+                <Sparkles className="w-5 h-5 fill-violet-400" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-white">Featured Servers</h2>
-                <p className="text-xs sm:text-sm text-zinc-400">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-white via-violet-200 to-fuchsia-200 bg-clip-text text-transparent">
+                    Featured Servers
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                    Hot Spotlight
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
                   Hand-picked & high-engagement verified Discord communities
                 </p>
               </div>
             </div>
             <Link
               href="/servers?sort=popular"
-              className="text-xs sm:text-sm font-semibold text-discord-blurple hover:underline flex items-center gap-1"
+              className="text-xs sm:text-sm font-semibold text-violet-400 hover:text-fuchsia-300 hover:underline flex items-center gap-1 transition-colors"
             >
               <span>View all</span>
               <ArrowRight className="w-4 h-4" />
@@ -267,6 +278,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <SponsorCard />
             {featuredServers.map((server) => (
               <ServerCard key={server.id} server={server} />
             ))}

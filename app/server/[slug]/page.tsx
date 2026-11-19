@@ -24,6 +24,7 @@ import ServerBumpButton from "@/components/ServerBumpButton";
 import ServerCard from "@/components/ServerCard";
 import ServerReviews from "./ServerReviews";
 import ShareModalButton from "./ShareModalButton";
+import ReportServerModal from "./ReportServerModal";
 import JoinButton from "@/components/JoinButton";
 import { generateServerSchema, generateBreadcrumbSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
 
@@ -326,15 +327,23 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
               </div>
             </div>
 
-            {/* Right: Join & Share Actions */}
-            <div className="flex flex-col sm:flex-row md:flex-col items-stretch gap-3 w-full md:w-56 flex-shrink-0">
+            {/* Right: Join, Share & Report Actions */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-stretch gap-2.5 w-full md:w-56 flex-shrink-0">
               <JoinButton
                 serverId={server.id}
                 inviteUrl={server.inviteUrl}
                 serverName={server.name}
               />
 
-              <ShareModalButton serverName={server.name} slug={server.slug} />
+              <div className="grid grid-cols-2 gap-2">
+                <ShareModalButton serverName={server.name} slug={server.slug} />
+                <ReportServerModal
+                  serverId={server.id}
+                  serverName={server.name}
+                  serverSlug={server.slug}
+                  buttonVariant="header"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -498,11 +507,20 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-2" suppressHydrationWarning>
+                <div className="flex items-center justify-between py-2 border-b border-zinc-800" suppressHydrationWarning>
                   <span className="text-zinc-400">Total Joins</span>
                   <span className="font-semibold text-zinc-200">
                     {server.joinsCount.toLocaleString("en-US")}
                   </span>
+                </div>
+
+                <div className="pt-2">
+                  <ReportServerModal
+                    serverId={server.id}
+                    serverName={server.name}
+                    serverSlug={server.slug}
+                    buttonVariant="sidebar"
+                  />
                 </div>
               </div>
             </div>

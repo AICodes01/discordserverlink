@@ -49,6 +49,8 @@ export default async function AdminPage() {
   let recentVisitorLogs: any[] = [];
   let blogPosts: any[] = [];
   let promotions: any[] = [];
+  let contactMessages: any[] = [];
+  let serverReports: any[] = [];
 
   try {
     const results = await Promise.all([
@@ -139,6 +141,16 @@ export default async function AdminPage() {
           },
         },
       }),
+      prisma.auditLog.findMany({
+        where: { action: "CONTACT_FORM_SUBMISSION" },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+      prisma.auditLog.findMany({
+        where: { action: "SERVER_REPORT" },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
     ]);
 
     servers = (results[0] || []).slice(0, 25);
@@ -159,6 +171,50 @@ export default async function AdminPage() {
     recentVisitorLogs = results[15] || [];
     blogPosts = results[16] || [];
     promotions = results[17] || [];
+    const contactLogs = results[18] || [];
+    contactMessages = contactLogs.map((log: any) => {
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(log.details || "{}");
+      } catch {
+        parsed = { message: log.details };
+      }
+      return {
+        id: log.id,
+        name: parsed.name || "Anonymous",
+        email: parsed.email || "",
+        subject: parsed.subject || "General Inquiry",
+        message: parsed.message || "",
+        status: parsed.status || "UNREAD",
+        createdAt: log.createdAt,
+        submittedAt: parsed.submittedAt || log.createdAt,
+      };
+    });
+
+    const reportLogs = results[19] || [];
+    serverReports = reportLogs.map((log: any) => {
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(log.details || "{}");
+      } catch {
+        parsed = { comment: log.details };
+      }
+      return {
+        id: log.id,
+        serverId: log.targetId || parsed.serverId || "",
+        serverName: parsed.serverName || "Discord Server",
+        serverSlug: parsed.serverSlug || "",
+        reporterName: parsed.reporterName || "Anonymous Reporter",
+        reporterEmail: parsed.reporterEmail || "",
+        reason: parsed.reason || "Rule Violation",
+        comment: parsed.comment || "",
+        status: parsed.status || "PENDING",
+        adminNotes: parsed.adminNotes || "",
+        ipAddress: log.ipAddress || "",
+        createdAt: log.createdAt,
+        submittedAt: parsed.submittedAt || log.createdAt,
+      };
+    });
   } catch (err) {
     console.warn("Admin prefetch warning (using fallback data):", err);
     categories = seedData.categories || DEFAULT_CATEGORIES;
@@ -233,6 +289,8 @@ export default async function AdminPage() {
       initialVideos={videosList}
       initialBlogPosts={blogPosts}
       initialPromotions={promotions}
+      initialContactMessages={contactMessages}
+      initialServerReports={serverReports}
       stats={{
         totalServers: totalServers || TOTAL_SERVERS_COUNT,
         pendingServers: pendingServers || 0,

@@ -29,23 +29,29 @@ export async function POST(req: Request) {
       );
     }
 
-    // Attempt to log contact inquiry into AuditLog or console
+    // Attempt to log contact inquiry into AuditLog
+    const msgId = "msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+    const newInquiry = {
+      id: msgId,
+      name: name.trim().slice(0, 100),
+      email: email.trim().slice(0, 120),
+      subject: subject.trim().slice(0, 150),
+      message: message.trim().slice(0, 3000),
+      status: "UNREAD",
+      submittedAt: new Date().toISOString(),
+    };
+
     try {
       await prisma.auditLog.create({
         data: {
           action: "CONTACT_FORM_SUBMISSION",
-          details: JSON.stringify({
-            name: name.trim().slice(0, 100),
-            email: email.trim().slice(0, 120),
-            subject: subject.trim().slice(0, 150),
-            message: message.trim().slice(0, 2000),
-            submittedAt: new Date().toISOString(),
-          }),
+          targetType: "ContactMessage",
+          targetId: msgId,
+          details: JSON.stringify(newInquiry),
         },
       });
-    } catch {
-      // In case AuditLog table has specific schema or offline, proceed gracefully
-      console.log("[CONTACT_FORM]", { name, email, subject, message });
+    } catch (err) {
+      console.warn("[CONTACT_FORM] Fallback logging:", err, newInquiry);
     }
 
     return NextResponse.json({

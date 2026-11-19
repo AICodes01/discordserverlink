@@ -1,8 +1,9 @@
 import prisma from "@/lib/prisma";
 import ServerCard from "@/components/ServerCard";
+import SponsorCard from "@/components/SponsorCard";
 import Pagination from "@/components/Pagination";
 import Link from "next/link";
-import { Search, Filter, Layers, Sparkles } from "lucide-react";
+import { Search, Filter, Layers, Sparkles, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 
 import { SITE_URL } from "@/lib/seo";
@@ -102,13 +103,14 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
   }
 
   let servers: any[] = [];
+  let featuredServers: any[] = [];
   let totalCount = 0;
   let allServersCount = TOTAL_SERVERS_COUNT;
   let categories: any[] = [];
   let countMap: Record<string, number> = {};
 
   try {
-    const [dbServers, dbTotal, dbAllCount, dbCats, catCounts] = await Promise.all([
+    const [dbServers, dbTotal, dbAllCount, dbCats, catCounts, dbFeatured] = await Promise.all([
       prisma.server.findMany({
         where,
         orderBy,
@@ -125,9 +127,22 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
         where: { status: "APPROVED" },
         _count: { id: true },
       }),
+      prisma.server.findMany({
+        where: {
+          status: "APPROVED",
+          isFeatured: true,
+          OR: [
+            { featuredUntil: null },
+            { featuredUntil: { gt: new Date() } },
+          ],
+        },
+        orderBy: { lastBumpedAt: "desc" },
+        take: 5,
+      }),
     ]);
 
     servers = dbServers;
+    featuredServers = dbFeatured;
     totalCount = dbTotal;
     allServersCount = dbAllCount || TOTAL_SERVERS_COUNT;
     categories = dbCats;
@@ -153,6 +168,11 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
     servers = result.servers;
     totalCount = result.totalCount;
     allServersCount = result.allServersCount;
+    featuredServers = servers.slice(0, 2).map((s) => ({ ...s, isFeatured: true }));
+  }
+
+  if (featuredServers.length === 0 && servers.length > 0) {
+    featuredServers = servers.slice(0, 2).map((s) => ({ ...s, isFeatured: true }));
   }
 
   const totalPages = Math.ceil(totalCount / limit);
@@ -266,6 +286,46 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
           )}
         </div>
       </div>
+
+      {/* Featured Servers Spotlight Section */}
+      {featuredServers.length > 0 && (
+        <section className="space-y-4 pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2.5 rounded-2xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 text-violet-400 shadow-[0_0_20px_rgba(168,85,247,0.25)]">
+                <Sparkles className="w-5 h-5 fill-violet-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-white via-violet-200 to-fuchsia-200 bg-clip-text text-transparent">
+                    Featured Servers
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                    Hot Spotlight
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
+                  Hand-picked & high-engagement verified Discord communities
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/login?callbackUrl=/dashboard"
+              className="text-xs sm:text-sm font-semibold text-violet-400 hover:text-fuchsia-300 hover:underline flex items-center gap-1 transition-colors"
+            >
+              <span>Promote your server</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <SponsorCard />
+            {featuredServers.map((server) => (
+              <ServerCard key={server.id} server={server} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Servers Grid */}
       {servers.length > 0 ? (
