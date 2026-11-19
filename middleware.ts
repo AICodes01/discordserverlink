@@ -46,29 +46,52 @@ const BLOCKED_BOT_KEYWORDS = [
 
 // Essential bots that MUST always be allowed (Search engines & Social link previews)
 const ESSENTIAL_BOTS = [
+  // Major Search Engines & Webmaster Verification Tools
   "googlebot",
+  "google-inspectiontool",
+  "mediapartners-google",
   "bingbot",
+  "msnbot",
+  "bingpreview",
   "duckduckbot",
   "yandex",
   "slurp",
   "baiduspider",
+  "applebot",
+
+  // Social Media Link Embeds & Unfurl Previews
   "discordbot",
   "twitterbot",
   "facebookexternalhit",
+  "facebot",
   "whatsapp",
   "telegrambot",
+  "linkedinbot",
+  "slackbot",
+  "pinterest",
+  "skypeuripreview",
+
+  // Cloudflare internal checks & proxies
+  "cloudflare",
 ];
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // 1. Always bypass authentication routes (OAuth callbacks must never be blocked)
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
   const userAgent = (request.headers.get("user-agent") || "").toLowerCase();
 
-  // 1. Allow essential search engine crawlers and social link embed scrapers
+  // 2. Allow essential search engine crawlers and social link embed scrapers
   const isEssentialBot = ESSENTIAL_BOTS.some((bot) => userAgent.includes(bot));
   if (isEssentialBot) {
     return NextResponse.next();
   }
 
-  // 2. Reject aggressive commercial and AI scrapers before database query or page rendering
+  // 3. Reject aggressive commercial and AI scrapers before database query or page rendering
   if (userAgent) {
     for (const blocked of BLOCKED_BOT_KEYWORDS) {
       if (userAgent.includes(blocked)) {
@@ -88,7 +111,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Apply to all application routes, skipping static files, icons, and manifests
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|ads.txt|robots.txt|sitemap.xml).*)",
+    // Apply to all application routes, skipping static assets and manifests
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|ads.txt|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

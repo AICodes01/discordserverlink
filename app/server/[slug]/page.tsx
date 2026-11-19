@@ -151,16 +151,6 @@ export default async function ServerDetailPage({ params }: ServerPageProps) {
     notFound();
   }
 
-  // Increment server view count asynchronously
-  if (server?.id) {
-    prisma.server
-      .update({
-        where: { id: server.id },
-        data: { viewsCount: { increment: 1 } },
-      })
-      .catch(() => {});
-  }
-
   // Calculate average rating
   const reviewCount = server.reviews?.length || 0;
   const avgRating =
