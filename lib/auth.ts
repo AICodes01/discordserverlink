@@ -4,6 +4,13 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { custom } from "openid-client";
+
+// Increase openid-client timeout from default 3500ms to 20000ms (20s)
+// to prevent "outgoing request timed out after 3500ms" OAuthCallback errors on high-latency connections
+custom.setHttpOptionsDefaults({
+  timeout: 20000,
+});
 
 const defaultDiscordId = "1569768601207185599";
 const defaultDiscordSecret = "ZNSFThfUuTENrwfulwNvtIjiBqNKbutG";
@@ -48,6 +55,9 @@ export const authOptions: NextAuthOptions = {
                 scope: "identify email guilds",
               },
             },
+            httpOptions: {
+              timeout: 20000,
+            },
           }),
         ]
       : []),
@@ -62,6 +72,9 @@ export const authOptions: NextAuthOptions = {
                 access_type: "offline",
                 response_type: "code",
               },
+            },
+            httpOptions: {
+              timeout: 20000,
             },
           }),
         ]

@@ -161,6 +161,18 @@ function UserLoginForm() {
             </p>
           </div>
 
+          {/* Instant Dev / Demo Login Button for Testing */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white text-xs font-semibold transition border border-zinc-700/60 cursor-pointer shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Instant Test Login (Demo Account)</span>
+            </button>
+          </div>
+
           {/* Setup Notice if neither OAuth is fully active */}
           {hasDiscordProvider === false && (
             <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs space-y-3">

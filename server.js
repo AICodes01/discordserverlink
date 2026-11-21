@@ -5,6 +5,19 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
+// ---- RESOURCE GUARD: Prevent thread explosion on 192-core shared hosting ----
+if (process.platform === "linux") {
+  try {
+    execSync(`taskset -p -c 0,1 ${process.pid} 2>/dev/null`);
+    console.log("[Resource Guard] Successfully pinned process affinity to cores 0,1 with taskset.");
+  } catch (e) {
+    // taskset fallback
+  }
+}
+if (!process.env.TOKIO_WORKER_THREADS) process.env.TOKIO_WORKER_THREADS = "2";
+if (!process.env.UV_THREADPOOL_SIZE) process.env.UV_THREADPOOL_SIZE = "2";
+if (!process.env.RAYON_NUM_THREADS) process.env.RAYON_NUM_THREADS = "2";
+
 // 1. Automatically find and load .env from current directory, parent dirs, or home
 function loadEnvFile(envPath) {
   if (!fs.existsSync(envPath)) return false;
@@ -51,7 +64,12 @@ for (const p of candidatePaths) {
 // 2. Production defaults for MilesWeb hosting
 if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
 if (!process.env.PORT) process.env.PORT = "3000";
-if (!process.env.DATABASE_URL) process.env.DATABASE_URL = "file:./dev.db";
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "file:./dev.db?connection_limit=2";
+} else if (!process.env.DATABASE_URL.includes("connection_limit")) {
+  const sep = process.env.DATABASE_URL.includes("?") ? "&" : "?";
+  process.env.DATABASE_URL = `${process.env.DATABASE_URL}${sep}connection_limit=2`;
+}
 if (!process.env.NEXTAUTH_URL) process.env.NEXTAUTH_URL = "https://discordserverlink.com";
 if (!process.env.NEXTAUTH_SECRET) {
   process.env.NEXTAUTH_SECRET = "discordserverlink-super-secure-production-secret-2026";
