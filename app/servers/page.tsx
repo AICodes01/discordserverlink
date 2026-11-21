@@ -319,9 +319,11 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <SponsorCard />
-            {featuredServers.map((server) => (
-              <ServerCard key={server.id} server={server} />
+            <div className="stagger-item"><SponsorCard /></div>
+            {featuredServers.map((server, i) => (
+              <div key={server.id} className="stagger-item" style={{ animationDelay: `${(i + 1) * 60}ms` }}>
+                <ServerCard server={server} />
+              </div>
             ))}
           </div>
         </section>
@@ -330,8 +332,10 @@ export default async function ServersPage({ searchParams }: ServersPageProps) {
       {/* Servers Grid */}
       {servers.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {servers.map((server) => (
-            <ServerCard key={server.id} server={server} />
+          {servers.map((server, i) => (
+            <div key={server.id} className="stagger-item" style={{ animationDelay: `${Math.min(i * 50, 550)}ms` }}>
+              <ServerCard server={server} />
+            </div>
           ))}
         </div>
       ) : (

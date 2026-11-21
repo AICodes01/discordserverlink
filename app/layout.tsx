@@ -5,11 +5,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
-import HeaderAdBanner from "@/components/ads/HeaderAdBanner";
-import FooterAdBanner from "@/components/ads/FooterAdBanner";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
-import prisma from "@/lib/prisma";
 import { generateWebSiteSchema, SITE_URL, SITE_NAME } from "@/lib/seo";
+import { Suspense } from "react";
+import LayoutSettingsLoader from "@/components/LayoutSettingsLoader";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -78,35 +77,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const websiteSchema = generateWebSiteSchema();
-
-  let settingsMap: Record<string, string> = {};
-  try {
-    const settings = await prisma.siteSetting.findMany();
-    settingsMap = settings.reduce((acc, curr) => {
-      acc[curr.key] = curr.value;
-      return acc;
-    }, {} as Record<string, string>);
-  } catch (e) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const seed = require("@/prisma/seed-data.json");
-      if (Array.isArray(seed.siteSettings)) {
-        settingsMap = seed.siteSettings.reduce((acc: any, curr: any) => {
-          acc[curr.key] = curr.value;
-          return acc;
-        }, {} as Record<string, string>);
-      }
-    } catch {}
-  }
-
-  const headCode = settingsMap.head_code || "";
-  const bodyEndCode = settingsMap.body_end_code || "";
 
   return (
     <html lang="en" className="dark scroll-smooth">
@@ -118,33 +94,20 @@ export default async function RootLayout({
         />
       </head>
       <body className="bg-[#0c0e14] text-zinc-100 min-h-screen flex flex-col selection:bg-discord-blurple selection:text-white">
-        {headCode && (
-          <div
-            id="injected-head-code"
-            dangerouslySetInnerHTML={{ __html: headCode }}
-          />
-        )}
         <Providers>
           <AnalyticsTracker />
-          <AnnouncementBanner />
+          {/* AnnouncementBanner in Suspense so it never blocks navigation */}
+          <Suspense fallback={null}>
+            <AnnouncementBanner />
+          </Suspense>
           <Navbar />
-          <HeaderAdBanner
-            code={settingsMap.ad_header_code}
-            enabled={settingsMap.ad_header_enabled}
-          />
+          {/* Settings-dependent banners load async without blocking the page */}
+          <Suspense fallback={null}>
+            <LayoutSettingsLoader />
+          </Suspense>
           <div className="flex-1">{children}</div>
-          <FooterAdBanner
-            code={settingsMap.ad_footer_code}
-            enabled={settingsMap.ad_footer_enabled}
-          />
           <Footer />
           <CookieConsentBanner />
-          {bodyEndCode && (
-            <div
-              style={{ display: "none" }}
-              dangerouslySetInnerHTML={{ __html: bodyEndCode }}
-            />
-          )}
         </Providers>
       </body>
     </html>

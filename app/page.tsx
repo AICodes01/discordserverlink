@@ -278,9 +278,11 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <SponsorCard />
-            {featuredServers.map((server) => (
-              <ServerCard key={server.id} server={server} />
+            <div className="stagger-item"><SponsorCard /></div>
+            {featuredServers.map((server, i) => (
+              <div key={server.id} className="stagger-item" style={{ animationDelay: `${(i + 1) * 60}ms` }}>
+                <ServerCard server={server} />
+              </div>
             ))}
           </div>
         </section>
@@ -359,8 +361,10 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recentlyBumpedServers.map((server) => (
-            <ServerCard key={server.id} server={server} />
+          {recentlyBumpedServers.map((server, i) => (
+            <div key={server.id} className="stagger-item" style={{ animationDelay: `${Math.min(i * 50, 500)}ms` }}>
+              <ServerCard server={server} />
+            </div>
           ))}
         </div>
 

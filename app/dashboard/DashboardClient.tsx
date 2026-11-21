@@ -137,7 +137,35 @@ export default function DashboardClient({
   };
 
   useEffect(() => {
-    fetchDiscordGuilds();
+    // Use isMounted flag to avoid state updates on unmounted component
+    // (avoids AbortError from AbortController cleanup in React Strict Mode)
+    let isMounted = true;
+
+    setLoadingGuilds(true);
+    setGuildsError(null);
+
+    fetch("/api/dashboard/discord-guilds")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.error === "NO_DISCORD_TOKEN") {
+          setGuildsError(data.message || "Connect your Discord account to sync servers.");
+        } else {
+          setDiscordGuilds(data.guilds || []);
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setGuildsError("Could not connect to Discord. Please refresh or try again.");
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setLoadingGuilds(false);
+      });
+
+    return () => {
+      isMounted = false; // Prevents any state update after unmount — no AbortError thrown
+    };
   }, []);
 
   const unlistedGuildsCount = discordGuilds.filter((g) => !g.isListed).length;
@@ -367,7 +395,7 @@ export default function DashboardClient({
 
       {/* Moderation Review Queue Submission Alert */}
       {reviewNotice && (
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-lg animate-in fade-in">
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-lg animate-fade-up">
           <div className="flex items-center gap-3">
             <Clock className="w-5 h-5 text-amber-400 shrink-0" />
             <p className="font-medium text-white">{reviewNotice}</p>
@@ -460,7 +488,7 @@ export default function DashboardClient({
 
       {/* Banner: Discord Account Servers Detected */}
       {unlistedGuildsCount > 0 && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-discord-blurple/20 via-indigo-950/30 to-purple-950/20 border border-discord-blurple/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-glow-sm animate-in fade-in">
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-discord-blurple/20 via-indigo-950/30 to-purple-950/20 border border-discord-blurple/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-glow-sm animate-fade-up">
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-discord-blurple flex items-center justify-center text-white shadow-glow-sm shrink-0">
               <Server className="w-5 h-5" />
@@ -678,11 +706,11 @@ export default function DashboardClient({
 
                         <div className="flex items-center gap-4 text-xs text-zinc-400 pt-1">
                           <span>
-                            Members: <strong className="text-zinc-200">{server.memberCount.toLocaleString()}</strong>
+                            Members: <strong className="text-zinc-200">{(server.memberCount ?? 0).toLocaleString()}</strong>
                           </span>
                           <span>&bull;</span>
                           <span className="text-zinc-400">
-                            Last Bumped: {new Date(server.lastBumpedAt).toLocaleDateString()}
+                            Last Bumped: {server.lastBumpedAt ? new Date(server.lastBumpedAt).toLocaleDateString() : "Never"}
                           </span>
                         </div>
                       </div>
@@ -694,7 +722,7 @@ export default function DashboardClient({
                         <p className="text-[11px] text-zinc-400">Views</p>
                         <p className="text-sm font-bold text-white flex items-center gap-1">
                           <Eye className="w-3 h-3 text-sky-400" />
-                          <span>{server.viewsCount.toLocaleString()}</span>
+                          <span>{(server.viewsCount ?? 0).toLocaleString()}</span>
                         </p>
                       </div>
 
@@ -702,7 +730,7 @@ export default function DashboardClient({
                         <p className="text-[11px] text-zinc-400">Bumps</p>
                         <p className="text-sm font-bold text-white flex items-center gap-1">
                           <Rocket className="w-3 h-3 text-amber-400" />
-                          <span>{server.bumpsCount.toLocaleString()}</span>
+                          <span>{(server.bumpsCount ?? 0).toLocaleString()}</span>
                         </p>
                       </div>
 
@@ -710,7 +738,7 @@ export default function DashboardClient({
                         <p className="text-[11px] text-zinc-400">Join Clicks</p>
                         <p className="text-sm font-bold text-emerald-400 flex items-center gap-1">
                           <Users className="w-3 h-3" />
-                          <span>{server.joinsCount.toLocaleString()}</span>
+                          <span>{(server.joinsCount ?? 0).toLocaleString()}</span>
                         </p>
                       </div>
                     </div>
@@ -1216,7 +1244,7 @@ export default function DashboardClient({
 
       {/* PROMOTION REQUEST MODAL */}
       {promoteModalOpen && selectedServerForPromo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="w-full max-w-lg rounded-3xl bg-zinc-950 border border-zinc-800 p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <button
               onClick={() => {
@@ -1368,7 +1396,7 @@ export default function DashboardClient({
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteModalOpen && itemToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="w-full max-w-md rounded-3xl bg-zinc-950 border border-red-500/30 p-6 sm:p-8 space-y-5 shadow-2xl text-center">
             <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto">
               <Trash2 className="w-7 h-7" />
@@ -1410,7 +1438,7 @@ export default function DashboardClient({
 
       {/* QUICK ADD SERVER MODAL */}
       {quickAddModalOpen && selectedGuildToAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
           <div className="w-full max-w-lg rounded-3xl bg-zinc-950 border border-zinc-800 p-6 sm:p-8 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => {

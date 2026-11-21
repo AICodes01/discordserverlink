@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useRef } from "react";
 import { CheckCircle2, Award, Sparkles, Users, Radio, ExternalLink } from "lucide-react";
 
 interface ServerCardProps {
@@ -54,9 +55,34 @@ export default function ServerCard({ server }: ServerCardProps) {
     }
   };
 
+  // Ripple click effect
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const ripple = document.createElement("span");
+    ripple.style.cssText = `
+      position:absolute; border-radius:50%; pointer-events:none;
+      width:120px; height:120px;
+      left:${x - 60}px; top:${y - 60}px;
+      background:rgba(139,92,246,0.18);
+      transform:scale(0); z-index:50;
+      animation:ripple-spread 0.55s cubic-bezier(0.22,1,0.36,1) forwards;
+    `;
+    card.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  };
+
   return (
     <div
-      className={`group relative rounded-2xl flex flex-col overflow-hidden transition-all duration-300 ${
+      ref={cardRef}
+      onClick={handleCardClick}
+      className={`group relative rounded-2xl flex flex-col overflow-hidden transition-all duration-300 cursor-pointer ${
         isFeatured
           ? "bg-gradient-to-b from-violet-950/25 via-zinc-900/95 to-zinc-950 border border-violet-500/40 hover:border-fuchsia-400/80 shadow-[0_0_25px_-5px_rgba(139,92,246,0.3)] hover:shadow-[0_0_35px_-2px_rgba(236,72,153,0.45)] ring-1 ring-violet-500/20 hover:-translate-y-1"
           : "bg-zinc-900/80 border border-zinc-800/80 hover:border-discord-blurple/50 hover:shadow-glow"
@@ -75,7 +101,10 @@ export default function ServerCard({ server }: ServerCardProps) {
             alt={`${server.name} banner`}
             width={400}
             height={112}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onLoad={() => setImgLoaded(true)}
+            className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
+              imgLoaded ? "opacity-100" : "opacity-0"
+            }`}
             loading="lazy"
             decoding="async"
           />
