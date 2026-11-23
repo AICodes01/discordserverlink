@@ -7,18 +7,13 @@ export async function verifyTurnstileToken(
   token: string | null | undefined,
   remoteIp?: string
 ): Promise<{ success: boolean; errorCodes?: string[] }> {
-  // Use user-defined secret key or Cloudflare official testing secret (always passes)
+  // Use user-defined secret key or production Turnstile secret
   const secretKey =
     process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ||
-    "1x0000000000000000000000000000000AA";
+    "0x4AAAAAACFrWTF-THuaCOhsNs4Yu4MVink";
 
-  // In local development or testing mode, if token is test-token or dummy, allow
   if (!token) {
     return { success: false, errorCodes: ["missing-input-response"] };
-  }
-
-  if (token === "cf-test-token" || token.startsWith("1x00000")) {
-    return { success: true };
   }
 
   try {

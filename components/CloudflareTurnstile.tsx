@@ -42,10 +42,10 @@ export default function CloudflareTurnstile({
   const [isVerified, setIsVerified] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
-  // Cloudflare official "Always passes" test sitekey for local development
+  // Cloudflare Turnstile official production sitekey for discordserverlink.com
   const siteKey =
     process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY ||
-    "1x00000000000000000000AA";
+    "0x4AAAAAACFrWX1lzSAW2z7T";
 
   useEffect(() => {
     let isMounted = true;
