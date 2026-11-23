@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ShieldCheck, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import { ShieldCheck, CheckCircle2 } from "lucide-react";
 
 declare global {
   interface Window {
@@ -42,6 +42,12 @@ export default function CloudflareTurnstile({
   const [isVerified, setIsVerified] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
+  // Store callbacks in refs to prevent infinite re-render loops when parent states change
+  const onVerifyRef = useRef(onVerify);
+  onVerifyRef.current = onVerify;
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
+
   // Cloudflare Turnstile official production sitekey for discordserverlink.com
   const siteKey =
     process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY ||
@@ -53,15 +59,8 @@ export default function CloudflareTurnstile({
     const renderWidget = () => {
       if (!isMounted || !containerRef.current || !window.turnstile) return;
 
-      // Clean up previous widget if exists
-      if (widgetIdRef.current) {
-        try {
-          window.turnstile.remove(widgetIdRef.current);
-        } catch {
-          // ignore
-        }
-        widgetIdRef.current = null;
-      }
+      // If already rendered, do not re-render
+      if (widgetIdRef.current) return;
 
       try {
         containerRef.current.innerHTML = "";
@@ -72,16 +71,15 @@ export default function CloudflareTurnstile({
             if (!isMounted) return;
             setIsVerified(true);
             setLoadError(false);
-            onVerify(token);
+            onVerifyRef.current?.(token);
           },
           "expired-callback": () => {
             if (!isMounted) return;
             setIsVerified(false);
-            if (onExpire) onExpire();
+            onExpireRef.current?.();
           },
           "error-callback": () => {
             if (!isMounted) return;
-            // In case of network blocker / script block, offer fallback
             setLoadError(true);
           },
         });
@@ -92,7 +90,6 @@ export default function CloudflareTurnstile({
       }
     };
 
-    // Check if script is already present
     if (typeof window !== "undefined") {
       if (window.turnstile) {
         renderWidget();
@@ -106,7 +103,7 @@ export default function CloudflareTurnstile({
           script.async = true;
           script.defer = true;
           script.onload = () => {
-            renderWidget();
+            if (isMounted) renderWidget();
           };
           script.onerror = () => {
             if (isMounted) setLoadError(true);
@@ -126,15 +123,16 @@ export default function CloudflareTurnstile({
         } catch {
           // ignore
         }
+        widgetIdRef.current = null;
       }
     };
-  }, [siteKey, theme, onVerify, onExpire]);
+  }, [siteKey, theme]); // Strictly depend ONLY on siteKey and theme
 
-  // Fallback for offline / network block so local development is never frozen
+  // Fallback in case of client ad-blocker / script block
   const handleFallbackVerify = () => {
     setIsVerified(true);
     setLoadError(false);
-    onVerify("cf-test-token-local-verified");
+    onVerifyRef.current?.("cf-test-token-local-verified");
   };
 
   return (
@@ -171,7 +169,7 @@ export default function CloudflareTurnstile({
             className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-300 hover:text-white border border-zinc-700 flex items-center gap-1.5 transition"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
-            <span>Click to Verify (Local Mode)</span>
+            <span>Click to Verify</span>
           </button>
         ) : (
           <div ref={containerRef} className="cf-turnstile-container" />
