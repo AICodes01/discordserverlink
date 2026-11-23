@@ -216,6 +216,7 @@ export default function AdminDashboardClient({
   const [userSearch, setUserSearch] = useState("");
   const [pageSearch, setPageSearch] = useState("");
   const [pageSort, setPageSort] = useState<"today" | "yesterday" | "allTime">("today");
+  const [trafficPage, setTrafficPage] = useState(1);
 
   // Notifications
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -624,10 +625,17 @@ export default function AdminDashboardClient({
   const serverEndIndex = Math.min(serverStartIndex + servers.length, totalServerCount);
   const paginatedServers = servers;
 
-  // Filtered and sorted page-wise stats
-  const pageWiseList = (analytics?.pageWiseStats || [])
+  // Filtered and sorted page-wise stats (30 per page)
+  const filteredPageWiseList = (analytics?.pageWiseStats || [])
     .filter((p) => p.path.toLowerCase().includes(pageSearch.toLowerCase()))
     .sort((a, b) => b[pageSort] - a[pageSort]);
+
+  const trafficPerPage = 30;
+  const totalTrafficPages = Math.max(1, Math.ceil(filteredPageWiseList.length / trafficPerPage));
+  const currentTrafficPage = Math.min(Math.max(1, trafficPage), totalTrafficPages);
+  const trafficStartIndex = (currentTrafficPage - 1) * trafficPerPage;
+  const trafficEndIndex = Math.min(trafficStartIndex + trafficPerPage, filteredPageWiseList.length);
+  const pageWiseList = filteredPageWiseList.slice(trafficStartIndex, trafficEndIndex);
 
   // Traffic Growth calculation
   const viewsToday = analytics?.viewsToday || 0;
@@ -1453,7 +1461,10 @@ export default function AdminDashboardClient({
                       type="text"
                       placeholder="Filter path (e.g. /category/)..."
                       value={pageSearch}
-                      onChange={(e) => setPageSearch(e.target.value)}
+                      onChange={(e) => {
+                        setPageSearch(e.target.value);
+                        setTrafficPage(1);
+                      }}
                       className="bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-discord-blurple w-48 sm:w-56"
                     />
                   </div>
@@ -1461,7 +1472,10 @@ export default function AdminDashboardClient({
                   {/* Sort Controls */}
                   <div className="inline-flex rounded-xl bg-zinc-950 p-1 border border-zinc-800 text-xs">
                     <button
-                      onClick={() => setPageSort("today")}
+                      onClick={() => {
+                        setPageSort("today");
+                        setTrafficPage(1);
+                      }}
                       className={`px-3 py-1 rounded-lg font-bold transition ${
                         pageSort === "today"
                           ? "bg-discord-blurple text-white shadow"
@@ -1471,7 +1485,10 @@ export default function AdminDashboardClient({
                       Today
                     </button>
                     <button
-                      onClick={() => setPageSort("yesterday")}
+                      onClick={() => {
+                        setPageSort("yesterday");
+                        setTrafficPage(1);
+                      }}
                       className={`px-3 py-1 rounded-lg font-bold transition ${
                         pageSort === "yesterday"
                           ? "bg-discord-blurple text-white shadow"
@@ -1481,7 +1498,10 @@ export default function AdminDashboardClient({
                       Yesterday
                     </button>
                     <button
-                      onClick={() => setPageSort("allTime")}
+                      onClick={() => {
+                        setPageSort("allTime");
+                        setTrafficPage(1);
+                      }}
                       className={`px-3 py-1 rounded-lg font-bold transition ${
                         pageSort === "allTime"
                           ? "bg-discord-blurple text-white shadow"
@@ -1595,6 +1615,111 @@ export default function AdminDashboardClient({
                   </table>
                 </div>
               </div>
+
+              {/* Pagination Controls (30 per page) */}
+              {filteredPageWiseList.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                  <p className="text-xs text-zinc-400">
+                    Showing <span className="font-bold text-white font-mono">{trafficStartIndex + 1}</span> to{" "}
+                    <span className="font-bold text-white font-mono">{trafficEndIndex}</span> of{" "}
+                    <span className="font-bold text-white font-mono">{filteredPageWiseList.length}</span> pages
+                  </p>
+
+                  <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                    {/* First Page */}
+                    <button
+                      onClick={() => setTrafficPage(1)}
+                      disabled={currentTrafficPage === 1}
+                      title="First Page"
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold text-xs"
+                    >
+                      «
+                    </button>
+
+                    {/* Prev Page */}
+                    <button
+                      onClick={() => setTrafficPage((p) => Math.max(1, p - 1))}
+                      disabled={currentTrafficPage === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold text-xs"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Prev</span>
+                    </button>
+
+                    {/* Dynamic Page Numbers Window */}
+                    {(() => {
+                      const pages: (number | string)[] = [];
+                      const total = totalTrafficPages;
+                      const cur = currentTrafficPage;
+                      const delta = 2;
+
+                      const left = Math.max(1, cur - delta);
+                      const right = Math.min(total, cur + delta);
+
+                      if (left > 1) {
+                        pages.push(1);
+                        if (left > 2) pages.push("...");
+                      }
+
+                      for (let i = left; i <= right; i++) {
+                        pages.push(i);
+                      }
+
+                      if (right < total) {
+                        if (right < total - 1) pages.push("...");
+                        pages.push(total);
+                      }
+
+                      return pages.map((pageNum, idx) => {
+                        if (pageNum === "...") {
+                          return (
+                            <span
+                              key={`traffic-dots-${idx}`}
+                              className="px-2 py-1 text-zinc-600 font-bold select-none text-xs"
+                            >
+                              ...
+                            </span>
+                          );
+                        }
+                        const isActive = pageNum === cur;
+                        return (
+                          <button
+                            key={`traffic-page-${pageNum}`}
+                            onClick={() => setTrafficPage(Number(pageNum))}
+                            className={`min-w-[32px] h-8 px-2.5 rounded-lg font-bold transition text-xs ${
+                              isActive
+                                ? "bg-discord-blurple text-white shadow-glow-sm"
+                                : "bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800"
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      });
+                    })()}
+
+                    {/* Next Page */}
+                    <button
+                      onClick={() => setTrafficPage((p) => Math.min(totalTrafficPages, p + 1))}
+                      disabled={currentTrafficPage === totalTrafficPages}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold text-xs"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Last Page */}
+                    <button
+                      onClick={() => setTrafficPage(totalTrafficPages)}
+                      disabled={currentTrafficPage === totalTrafficPages}
+                      title="Last Page"
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition font-semibold text-xs"
+                    >
+                      »
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Device Distribution & Real-Time Hits */}
