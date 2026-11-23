@@ -13,9 +13,11 @@ import {
   Calendar,
   Sparkles,
 } from "lucide-react";
+import CloudflareTurnstile from "@/components/CloudflareTurnstile";
 
 export default function DiscordPfpViewerClient() {
   const [userIdInput, setUserIdInput] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userData, setUserData] = useState<any | null>(null);
@@ -25,6 +27,11 @@ export default function DiscordPfpViewerClient() {
     const idToLookup = (overrideId !== undefined ? overrideId : userIdInput).trim();
     if (!idToLookup) {
       setError("Please enter a Discord User ID.");
+      return;
+    }
+
+    if (!turnstileToken) {
+      setError("Please complete the Cloudflare verification check before running this tool.");
       return;
     }
 
@@ -43,7 +50,7 @@ export default function DiscordPfpViewerClient() {
       const res = await fetch("/api/tools/discord-pfp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: idToLookup }),
+        body: JSON.stringify({ userId: idToLookup, turnstileToken }),
       });
 
       const data = await res.json();
@@ -73,6 +80,12 @@ export default function DiscordPfpViewerClient() {
 
   return (
     <div className="bg-zinc-900/80 rounded-2xl border border-zinc-800 p-6 sm:p-8 space-y-6 shadow-xl">
+      {/* Cloudflare Verification */}
+      <CloudflareTurnstile
+        onVerify={(token) => setTurnstileToken(token)}
+        onExpire={() => setTurnstileToken(null)}
+      />
+
       <div>
         <label className="block text-xs font-bold uppercase tracking-wider text-zinc-300 mb-2">
           Enter Discord User ID
@@ -92,7 +105,7 @@ export default function DiscordPfpViewerClient() {
 
           <button
             onClick={() => handleSearch()}
-            disabled={loading}
+            disabled={loading || !turnstileToken}
             className="bg-discord-blurple hover:bg-discord-hover text-white font-bold px-7 py-3 rounded-xl transition-all shadow-glow-sm hover:shadow-glow disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shrink-0"
           >
             {loading ? (

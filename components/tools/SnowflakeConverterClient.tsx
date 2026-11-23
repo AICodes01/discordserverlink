@@ -8,9 +8,11 @@ import {
   Copy,
   Cpu,
 } from "lucide-react";
+import CloudflareTurnstile from "@/components/CloudflareTurnstile";
 
 export default function SnowflakeConverterClient() {
   const [snowflakeInput, setSnowflakeInput] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [decoded, setDecoded] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,6 +21,11 @@ export default function SnowflakeConverterClient() {
   const handleDecode = (val?: string) => {
     const input = (val !== undefined ? val : snowflakeInput).trim();
     if (!input) return;
+
+    if (!turnstileToken) {
+      setError("Please complete the Cloudflare verification check before running this tool.");
+      return;
+    }
 
     setError(null);
     setDecoded(null);
@@ -93,6 +100,14 @@ export default function SnowflakeConverterClient() {
           <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
             Paste Discord Snowflake ID (User ID, Server ID, Channel ID, or Message ID)
           </label>
+          {/* Cloudflare Verification */}
+          <CloudflareTurnstile
+            onVerify={(token) => {
+              setTurnstileToken(token);
+              setError(null);
+            }}
+            onExpire={() => setTurnstileToken(null)}
+          />
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <input

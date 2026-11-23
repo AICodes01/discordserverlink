@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { webhookUrl, username, avatar_url, content, embeds } = body;
+    const { webhookUrl, username, avatar_url, content, embeds, turnstileToken } = body;
+
+    const clientIp =
+      request.headers.get("cf-connecting-ip") ||
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const turnstileCheck = await verifyTurnstileToken(turnstileToken, clientIp);
+    if (!turnstileCheck.success) {
+      return NextResponse.json(
+        { error: "Cloudflare verification failed. Please complete the security check." },
+        { status: 403 }
+      );
+    }
 
     if (!webhookUrl || typeof webhookUrl !== "string") {
       return NextResponse.json(

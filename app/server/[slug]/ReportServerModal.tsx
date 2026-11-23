@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Flag, X, AlertTriangle, CheckCircle2, ShieldAlert, Loader2 } from "lucide-react";
+import CloudflareTurnstile from "@/components/CloudflareTurnstile";
 
 interface ReportServerModalProps {
   serverId: string;
@@ -33,6 +34,7 @@ export default function ReportServerModal({
   const [email, setEmail] = useState("");
   const [reason, setReason] = useState(REPORT_REASONS[0]);
   const [comment, setComment] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,11 @@ export default function ReportServerModal({
 
     if (!name.trim() || !email.trim() || !comment.trim() || !reason) {
       setError("Please fill out all required fields.");
+      return;
+    }
+
+    if (!turnstileToken) {
+      setError("Please complete the Cloudflare verification check.");
       return;
     }
 
@@ -57,6 +64,7 @@ export default function ReportServerModal({
           reason,
           comment: comment.trim(),
           serverSlug,
+          turnstileToken,
         }),
       });
 
@@ -69,6 +77,7 @@ export default function ReportServerModal({
       setName("");
       setEmail("");
       setComment("");
+      setTurnstileToken(null);
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred. Please try again.");
     } finally {
@@ -226,6 +235,12 @@ export default function ReportServerModal({
                   />
                 </div>
 
+                {/* Cloudflare Verification */}
+                <CloudflareTurnstile
+                  onVerify={(token) => setTurnstileToken(token)}
+                  onExpire={() => setTurnstileToken(null)}
+                />
+
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-3 pt-2 border-t border-zinc-800">
                   <button
@@ -237,7 +252,7 @@ export default function ReportServerModal({
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !turnstileToken}
                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-xs font-bold text-white shadow-[0_0_15px_rgba(225,29,72,0.4)] transition"
                   >
                     {loading ? (

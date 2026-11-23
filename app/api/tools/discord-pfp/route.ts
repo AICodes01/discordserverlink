@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const DISCORD_EPOCH = 1420070400000n;
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json();
+    const { userId, turnstileToken } = await req.json();
+
+    const clientIp =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const turnstileCheck = await verifyTurnstileToken(turnstileToken, clientIp);
+    if (!turnstileCheck.success) {
+      return NextResponse.json(
+        { error: "Cloudflare verification failed. Please complete the security check." },
+        { status: 403 }
+      );
+    }
 
     const cleanId = (userId || "").trim();
 

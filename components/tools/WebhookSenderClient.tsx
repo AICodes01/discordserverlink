@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Eye,
 } from "lucide-react";
+import CloudflareTurnstile from "@/components/CloudflareTurnstile";
 
 export default function WebhookSenderClient() {
   const [webhookUrl, setWebhookUrl] = useState("");
@@ -19,6 +20,7 @@ export default function WebhookSenderClient() {
   );
   const [embedColor, setEmbedColor] = useState("#5865F2");
   const [includeEmbed, setIncludeEmbed] = useState(true);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -27,6 +29,11 @@ export default function WebhookSenderClient() {
     e.preventDefault();
     if (!webhookUrl.trim()) {
       setStatus({ ok: false, msg: "Please enter your Discord Webhook URL." });
+      return;
+    }
+
+    if (!turnstileToken) {
+      setStatus({ ok: false, msg: "Please complete the Cloudflare verification check before sending." });
       return;
     }
 
@@ -39,6 +46,7 @@ export default function WebhookSenderClient() {
         username: username.trim() || undefined,
         avatar_url: avatarUrl.trim() || undefined,
         content: content.trim() || undefined,
+        turnstileToken,
       };
 
       if (includeEmbed && (embedTitle.trim() || embedDescription.trim())) {
@@ -292,11 +300,17 @@ export default function WebhookSenderClient() {
         </div>
       )}
 
+      {/* Cloudflare Verification */}
+      <CloudflareTurnstile
+        onVerify={(token) => setTurnstileToken(token)}
+        onExpire={() => setTurnstileToken(null)}
+      />
+
       {/* Submit Button */}
       <div>
         <button
           type="submit"
-          disabled={loading || !webhookUrl.trim()}
+          disabled={loading || !webhookUrl.trim() || !turnstileToken}
           className="w-full inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white py-3.5 rounded-2xl text-sm font-bold shadow-glow-sm hover:shadow-glow transition-all cursor-pointer"
         >
           {loading ? (

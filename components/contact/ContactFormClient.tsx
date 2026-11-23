@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Send, CheckCircle2, AlertCircle } from "lucide-react";
+import CloudflareTurnstile from "@/components/CloudflareTurnstile";
 
 export default function ContactFormClient() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("General Inquiry");
   const [message, setMessage] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
@@ -15,6 +17,14 @@ export default function ContactFormClient() {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !message.trim()) {
       setStatus({ ok: false, msg: "Please fill out all required fields." });
+      return;
+    }
+
+    if (!turnstileToken) {
+      setStatus({
+        ok: false,
+        msg: "Please complete the Cloudflare verification check before submitting.",
+      });
       return;
     }
 
@@ -30,6 +40,7 @@ export default function ContactFormClient() {
           email: email.trim(),
           subject: subject.trim(),
           message: message.trim(),
+          turnstileToken,
         }),
       });
 
@@ -43,6 +54,7 @@ export default function ContactFormClient() {
         setEmail("");
         setMessage("");
         setSubject("General Inquiry");
+        setTurnstileToken(null);
       } else {
         setStatus({ ok: false, msg: data.error || "Failed to send message. Please try again." });
       }
@@ -141,10 +153,16 @@ export default function ContactFormClient() {
         </div>
       )}
 
+      {/* Cloudflare Bot Verification */}
+      <CloudflareTurnstile
+        onVerify={(token) => setTurnstileToken(token)}
+        onExpire={() => setTurnstileToken(null)}
+      />
+
       <div>
         <button
           type="submit"
-          disabled={loading || !name.trim() || !email.trim() || !message.trim()}
+          disabled={loading || !name.trim() || !email.trim() || !message.trim() || !turnstileToken}
           className="w-full inline-flex items-center justify-center gap-2 bg-discord-blurple hover:bg-discord-hover disabled:opacity-50 text-white py-3.5 rounded-2xl text-sm font-bold shadow-glow hover:shadow-glow-lg transition-all cursor-pointer"
         >
           {loading ? (

@@ -2196,13 +2196,19 @@ export default function AdminDashboardClient({
                   </label>
                   <input
                     type="text"
-                    placeholder="GSC-DISCORD-SERVER-LINK-VERIFICATION-TOKEN-2026"
+                    placeholder="e.g. ZZfaxde1lj2LnwLGqrtboOrVIWbaL5m5fCJ1hc5vJVY"
                     value={settings.google_verification_code || ""}
-                    onChange={(e) =>
-                      setSettings({ ...settings, google_verification_code: e.target.value })
-                    }
+                    onChange={(e) => {
+                      let val = e.target.value.trim();
+                      const match = val.match(/content=["']([^"']+)["']/i);
+                      if (match) val = match[1].trim();
+                      setSettings({ ...settings, google_verification_code: val });
+                    }}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-zinc-200 font-mono focus:outline-none focus:border-discord-blurple"
                   />
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Paste either the token value or the full &lt;meta ...&gt; tag; the token will be automatically extracted.
+                  </p>
                 </div>
               </div>
             </div>

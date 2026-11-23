@@ -14,9 +14,11 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+import CloudflareTurnstile from "@/components/CloudflareTurnstile";
 
 export default function InviteCheckerClient() {
   const [inviteInput, setInviteInput] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any | null>(null);
@@ -26,13 +28,18 @@ export default function InviteCheckerClient() {
     if (e) e.preventDefault();
     if (!inviteInput.trim()) return;
 
+    if (!turnstileToken) {
+      setError("Please complete the Cloudflare verification check before running this tool.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
       const res = await fetch(
-        `/api/tools/invite-inspect?code=${encodeURIComponent(inviteInput.trim())}`
+        `/api/tools/invite-inspect?code=${encodeURIComponent(inviteInput.trim())}&turnstileToken=${encodeURIComponent(turnstileToken || "")}`
       );
       const data = await res.json();
 
@@ -71,6 +78,12 @@ export default function InviteCheckerClient() {
           <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
             Enter Discord Invite Link or Code
           </label>
+          {/* Cloudflare Verification */}
+          <CloudflareTurnstile
+            onVerify={(token) => setTurnstileToken(token)}
+            onExpire={() => setTurnstileToken(null)}
+          />
+
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <input
@@ -85,7 +98,7 @@ export default function InviteCheckerClient() {
             <button
               id="inspect-btn"
               type="submit"
-              disabled={loading || !inviteInput.trim()}
+              disabled={loading || !inviteInput.trim() || !turnstileToken}
               className="inline-flex items-center justify-center gap-2 bg-discord-blurple hover:bg-discord-hover disabled:opacity-50 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-glow transition-all shrink-0 cursor-pointer"
             >
               {loading ? (

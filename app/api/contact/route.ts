@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, subject, message } = body;
+    const { name, email, subject, message, turnstileToken } = body;
+
+    // Verify Cloudflare Turnstile token
+    const clientIp =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const turnstileCheck = await verifyTurnstileToken(turnstileToken, clientIp);
+    if (!turnstileCheck.success) {
+      return NextResponse.json(
+        { error: "Cloudflare verification failed. Please complete the security check." },
+        { status: 403 }
+      );
+    }
 
     if (!name || !email || !subject || !message) {
       return NextResponse.json(
