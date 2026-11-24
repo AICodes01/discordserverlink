@@ -6,6 +6,7 @@
 import prisma from "@/lib/prisma";
 import HeaderAdBanner from "@/components/ads/HeaderAdBanner";
 import FooterAdBanner from "@/components/ads/FooterAdBanner";
+import AdSenseScriptLoader from "@/components/ads/AdSenseScriptLoader";
 
 async function getSettings(): Promise<Record<string, string>> {
   try {
@@ -32,21 +33,48 @@ async function getSettings(): Promise<Record<string, string>> {
 export default async function LayoutSettingsLoader() {
   const settingsMap = await getSettings();
 
-  const headCode = settingsMap.head_code || "";
+  const rawHeadCode = settingsMap.head_code || "";
   const bodyEndCode = settingsMap.body_end_code || "";
+
+  // Check if headCode has an AdSense script
+  const hasAdSenseInHeadCode = rawHeadCode.includes("pagead2.googlesyndication.com");
+  // Clean raw AdSense script out of headCode so bots/scrapers fetching raw HTML don't trigger AdSense page views
+  const cleanedHeadCode = rawHeadCode.replace(
+    /<script[^>]*pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js[^>]*><\/script>/gi,
+    ""
+  ).trim();
+
+  // Resolve client ID (from settings or headCode or default)
+  const clientMatch = rawHeadCode.match(/client=(ca-pub-[0-9]+)/i);
+  const adsenseClientId =
+    settingsMap.adsense_client_id ||
+    clientMatch?.[1] ||
+    (hasAdSenseInHeadCode ? "ca-pub-7551201031226261" : "");
+
+  const autoAdsEnabled = settingsMap.adsense_auto_ads_enabled !== "false";
 
   return (
     <>
-      {headCode && (
-        <div
-          id="injected-head-code"
-          dangerouslySetInnerHTML={{ __html: headCode }}
+      {/* Smart AdSense loader: loads only on real human interactions (scroll/touch/mouse) to prevent bots from inflating page views */}
+      {adsenseClientId && autoAdsEnabled && (
+        <AdSenseScriptLoader
+          clientId={adsenseClientId}
+          autoAdsEnabled={autoAdsEnabled}
         />
       )}
+
+      {cleanedHeadCode && (
+        <div
+          id="injected-head-code"
+          dangerouslySetInnerHTML={{ __html: cleanedHeadCode }}
+        />
+      )}
+
       <HeaderAdBanner
         code={settingsMap.ad_header_code}
         enabled={settingsMap.ad_header_enabled}
       />
+
       {bodyEndCode && (
         <div
           style={{ display: "none" }}
